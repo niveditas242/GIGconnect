@@ -1,8 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Add accent color for easy reuse */
+:root {
+  --accent: #ff0077;
+}
 
-/* Optional global styles */
-body {
-  @apply bg-white text-gray-800;
+.bg-accent {
+  background-color: var(--accent);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.border-accent {
+  border-color: var(--accent);
 }

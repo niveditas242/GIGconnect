@@ -1,26 +1,24 @@
-import React from "react";
-import Header from "./components/Header";
+import "./App.css";
+import Navbar from "./components/Navbar";
 import HeroBanner from "./components/HeroBanner";
-import Brands from "./components/Brands";
-import Features from "./components/Features";
-import Showcase from "./components/Showcase";
+import CategoriesGrid from "./components/CategoriesGrid";
+import HowItWorks from "./components/HowItWorks";
 import GlobalNetwork from "./components/GlobalNetwork";
-import CTASection from "./components/CTASection";
+import Testimonials from "./components/Testimonials";
 import Footer from "./components/Footer";
 
-const App: React.FC = () => {
+function App() {
   return (
     <div className="App">
-      <Header />
+      <Navbar />
       <HeroBanner />
-      <Brands />
-      <Features />
-      <Showcase />
+      <CategoriesGrid />
+      <HowItWorks />
       <GlobalNetwork />
-      <CTASection />
+      <Testimonials />
       <Footer />
     </div>
   );
-};
+}
 
 export default App;

@@ -1,16 +1,45 @@
 import React from "react";
+import { motion } from "framer-motion";
 
-const Features: React.FC = () => {
+const features = [
+  {
+    title: "Local Freelancers",
+    desc: "Find skilled professionals near you for faster communication and better trust.",
+  },
+  {
+    title: "Secure Payments",
+    desc: "We ensure safe and secure payments for every completed project.",
+  },
+  {
+    title: "Verified Talent",
+    desc: "Every freelancer is verified and reviewed for quality assurance.",
+  },
+];
+
+const Features = () => {
   return (
-    <section className="py-16 text-white">
-      <h2 className="text-3xl font-bold mb-8 text-center">
-        Make it real with Freelancer
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="p-6 bg-gray-900 rounded-lg text-center">Feature 1</div>
-        <div className="p-6 bg-gray-900 rounded-lg text-center">Feature 2</div>
-        <div className="p-6 bg-gray-900 rounded-lg text-center">Feature 3</div>
-        <div className="p-6 bg-gray-900 rounded-lg text-center">Feature 4</div>
+    <section className="py-20 bg-white">
+      <div className="max-w-6xl mx-auto px-6 text-center">
+        <h2 className="text-4xl font-bold mb-12 text-gray-800">
+          Why Choose GigConnect?
+        </h2>
+        <div className="grid md:grid-cols-3 gap-10">
+          {features.map((f, i) => (
+            <motion.div
+              key={i}
+              className="bg-gray-100 p-8 rounded-2xl shadow hover:shadow-lg transition"
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: i * 0.2 }}
+              viewport={{ once: true }}
+            >
+              <h3 className="text-2xl font-semibold mb-4 text-indigo-600">
+                {f.title}
+              </h3>
+              <p className="text-gray-600">{f.desc}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

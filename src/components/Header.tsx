@@ -1,33 +1,54 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-const Header: React.FC = () => {
+const Header = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Detect scroll to add shadow and change background slightly
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="bg-black bg-opacity-80 sticky top-0 z-50">
-      <div className="container mx-auto flex justify-between items-center py-4">
-        <div className="text-white font-bold text-xl">Your Logo Here</div>
-        <nav className="flex items-center gap-6">
-          <a href="#" className="text-white hover:text-accent">
-            Find Talent
+    <header
+      className={`fixed top-0 left-0 w-full z-30 transition-all duration-300 ${
+        isScrolled
+          ? "bg-gradient-to-r from-indigo-700 to-purple-700 shadow-lg"
+          : "bg-gradient-to-r from-indigo-600 to-purple-600"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
+        {/* Logo */}
+        <h1 className="text-3xl font-bold text-white tracking-wide">
+          Gig<span className="text-yellow-300">Connect</span>
+        </h1>
+
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex space-x-8 text-white text-lg font-medium">
+          <a href="#" className="hover:text-yellow-300 transition">
+            Home
           </a>
-          <a href="#" className="text-white hover:text-accent">
-            Find Work
+          <a href="#" className="hover:text-yellow-300 transition">
+            Categories
           </a>
-          <a href="#" className="text-white hover:text-accent">
-            How It Works
+          <a href="#" className="hover:text-yellow-300 transition">
+            Projects
           </a>
-          <a
-            href="#"
-            className="px-4 py-2 border border-accent text-accent rounded hover:bg-accent hover:text-white transition"
-          >
-            Sign In
-          </a>
-          <a
-            href="#"
-            className="px-4 py-2 bg-accent text-white rounded hover:bg-pink-600 transition"
-          >
-            Sign Up
+          <a href="#" className="hover:text-yellow-300 transition">
+            Contact
           </a>
         </nav>
+
+        {/* CTA Button */}
+        <button className="hidden md:block bg-yellow-400 text-gray-900 px-5 py-2 rounded-full font-semibold hover:bg-yellow-300 transition">
+          Join Now
+        </button>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden text-white text-3xl cursor-pointer">☰</div>
       </div>
     </header>
   );
