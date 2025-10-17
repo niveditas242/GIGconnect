@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import "./HeroBanner.css";
 
 const HeroBanner: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [animatedServices, setAnimatedServices] = useState<string[]>([]);
+  const [isClosing, setIsClosing] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const serviceCategories = [
     {
@@ -141,16 +144,13 @@ const HeroBanner: React.FC = () => {
     "Salesforce",
   ];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % 3);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Handle category hover with animation
+  // Handle category hover
   const handleCategoryHover = (categoryTitle: string) => {
+    setIsClosing(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     setHoveredCategory(categoryTitle);
     setAnimatedServices([]);
 
@@ -158,18 +158,32 @@ const HeroBanner: React.FC = () => {
       (cat) => cat.title === categoryTitle
     );
     if (category) {
-      // Animate services one by one
-      category.services.forEach((service, index) => {
+      category.services.forEach((service, serviceIndex) => {
         setTimeout(() => {
           setAnimatedServices((prev) => [...prev, service]);
-        }, index * 100); // 100ms delay between each service
+        }, serviceIndex * 80);
       });
     }
   };
 
+  // Handle category leave with delay
   const handleCategoryLeave = () => {
-    setHoveredCategory(null);
-    setAnimatedServices([]);
+    setIsClosing(true);
+
+    // Delay closing to allow user to read
+    timeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null);
+      setAnimatedServices([]);
+      setIsClosing(false);
+    }, 500); // 500ms delay before closing
+  };
+
+  // Handle popup hover to keep it open
+  const handlePopupHover = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setIsClosing(false);
   };
 
   const getVisibleCategories = () => {
@@ -270,7 +284,12 @@ const HeroBanner: React.FC = () => {
 
                 {/* Hover Popup */}
                 {hoveredCategory === category.title && (
-                  <div className="services-popup">
+                  <div
+                    ref={popupRef}
+                    className={`services-popup ${isClosing ? "closing" : ""}`}
+                    onMouseEnter={handlePopupHover}
+                    onMouseLeave={handleCategoryLeave}
+                  >
                     <div className="popup-header">
                       <span className="popup-icon">{category.icon}</span>
                       <h5 className="popup-title">{category.title}</h5>
@@ -280,26 +299,16 @@ const HeroBanner: React.FC = () => {
                         <div
                           key={serviceIndex}
                           className="popup-service-item"
-                          style={{ animationDelay: `${serviceIndex * 0.1}s` }}
+                          style={{ animationDelay: `${serviceIndex * 0.08}s` }}
                         >
                           {service}
                         </div>
                       ))}
                     </div>
-                    <button className="popup-cta">
-                      Browse {category.services.length}+ Services
-                    </button>
                   </div>
                 )}
               </div>
             ))}
-          </div>
-
-          <div className="services-note">
-            <span>
-              Slide {currentSlide + 1} of 3 • {serviceCategories.length}{" "}
-              categories available
-            </span>
           </div>
         </div>
       </div>

@@ -1,51 +1,114 @@
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
+import "./Testimonials.css";
 
-const testimonials = [
-  {
-    name: "Alice",
-    feedback: "GigConnect made hiring local freelancers so easy!",
-  },
-  { name: "Bob", feedback: "I found the perfect freelancer within hours." },
-  { name: "Charlie", feedback: "Professional and reliable platform!" },
-];
+const Testimonials = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
-const Testimonials: React.FC = () => {
-  const [current, setCurrent] = useState(0);
+  const testimonials = [
+    {
+      id: 1,
+      quote:
+        "Your talent is the bridge between imagination and reality. Build it with passion, and the world will cross oceans to find you.",
+      author: "For Creative Minds",
+      type: "freelancer",
+      character: "👨‍💻",
+      animation: "bounce",
+      bgColor: "#3498db",
+    },
+    {
+      id: 2,
+      quote:
+        "Behind every great project is a visionary client who dared to dream and a talented freelancer who made it breathe.",
+      author: "For Visionaries",
+      type: "client",
+      character: "👔",
+      animation: "wiggle",
+      bgColor: "#2c3e50",
+    },
+  ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
-    return () => clearInterval(interval);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
   }, []);
 
   return (
-    <section className="py-20 bg-blue-50">
-      <div className="max-w-3xl mx-auto text-center px-4">
-        <motion.h2
-          className="text-3xl md:text-4xl font-bold mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          What People Say
-        </motion.h2>
+    <section className="testimonials" ref={sectionRef}>
+      <div className="container">
+        <h2 className="section-title">Where Talent Meets Opportunity</h2>
+        <p className="section-subtitle">
+          Building dreams together, one project at a time
+        </p>
 
-        <motion.div
-          key={current}
-          className="bg-white p-8 rounded-2xl shadow-lg transition-opacity duration-500"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.8 }}
-        >
-          <p className="text-gray-700 mb-4">{testimonials[current].feedback}</p>
-          <span className="font-semibold text-gray-900">
-            — {testimonials[current].name}
-          </span>
-        </motion.div>
+        <div className={`testimonials-grid ${isVisible ? "animate-in" : ""}`}>
+          {testimonials.map((testimonial, index) => (
+            <div
+              key={testimonial.id}
+              className={`testimonial-card ${testimonial.type}`}
+              style={{ animationDelay: `${index * 0.3}s` }}
+            >
+              {/* Animated Character with Speech Bubble */}
+              <div className="character-container">
+                <div className={`character ${testimonial.animation}`}>
+                  {testimonial.character}
+                </div>
+                <div className="speech-bubble">
+                  <div className="bubble-tail"></div>
+                </div>
+              </div>
+
+              <div className="testimonial-content">
+                <div className="testimonial-text">
+                  <span className="quote-mark">"</span>
+                  {testimonial.quote}
+                  <span className="quote-mark">"</span>
+                </div>
+
+                <div className="testimonial-author">
+                  <div className="author-name">{testimonial.author}</div>
+                  <div className="author-role">
+                    {testimonial.type === "freelancer"
+                      ? "Freelancer Spirit"
+                      : "Client Wisdom"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating elements */}
+              <div className="floating-elements">
+                <div className="floating-dot dot-1"></div>
+                <div className="floating-dot dot-2"></div>
+                <div className="floating-dot dot-3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Central Collaboration Animation */}
+        <div className="collaboration-scene">
+          <div className="collaboration-character left">👨‍💻</div>
+          <div className="collaboration-character right">👔</div>
+          <div className="project-sparkle">✨</div>
+          <div className="connection-beam"></div>
+          <div className="success-badge">Successful Collaboration!</div>
+        </div>
       </div>
     </section>
   );

@@ -260,11 +260,11 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .category-card {
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, #1e3a5c 0%, #2d4a7c 100%);
   border: 1px solid rgba(255, 215, 0, 0.1);
   border-radius: 16px;
   padding: 1.5rem;
@@ -300,157 +300,147 @@
 /* Services Popup */
 .services-popup {
   position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.95);
+  top: 50%;
+  left: -420px;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #1e3a5c 0%, #2d4a7c 100%);
   backdrop-filter: blur(20px);
   border: 2px solid #ffd700;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-top: 1rem;
+  border-radius: 20px;
+  padding: 2rem;
   z-index: 100;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
-  animation: popupFadeIn 0.3s ease;
-  max-height: 400px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  max-height: 500px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 380px;
+  animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transition: all 0.3s ease;
 }
 
-@keyframes popupFadeIn {
-  from {
+.services-popup.closing {
+  animation: slideOut 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+
+@keyframes slideIn {
+  0% {
+    left: -450px;
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-50%) scale(0.95);
   }
 
-  to {
+  100% {
+    left: -420px;
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    left: -420px;
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+
+  100% {
+    left: -450px;
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
   }
 }
 
 .popup-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #ffd700;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.2rem;
+  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
 }
 
 .popup-icon {
-  font-size: 1.8rem;
+  font-size: 2rem;
   background: rgba(255, 215, 0, 0.2);
-  padding: 0.5rem;
-  border-radius: 10px;
+  padding: 0.8rem;
+  border-radius: 12px;
+  color: #ffd700;
 }
 
 .popup-title {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 800;
   color: #ffd700;
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .popup-services {
   flex: 1;
-  max-height: 250px;
+  max-height: 350px;
   overflow-y: auto;
-  margin-bottom: 1.2rem;
+  margin-bottom: 0;
   padding-right: 0.5rem;
 }
 
 /* Custom scrollbar for popup */
 .popup-services::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .popup-services::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .popup-services::-webkit-scrollbar-thumb {
-  background: #ffd700;
-  border-radius: 4px;
+  background: rgba(255, 215, 0, 0.4);
+  border-radius: 3px;
 }
 
 .popup-services::-webkit-scrollbar-thumb:hover {
-  background: #ffed4e;
+  background: rgba(255, 215, 0, 0.6);
 }
 
 .popup-service-item {
   font-size: 0.95rem;
-  color: #ffffff;
-  margin-bottom: 0.6rem;
-  line-height: 1.4;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-left: 3px solid #ffd700;
-  animation: serviceItemFadeIn 0.5s ease forwards;
+  color: #e6f2ff;
+  margin-bottom: 0.8rem;
+  line-height: 1.5;
+  padding: 1rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  animation: serviceFadeIn 0.5s ease forwards;
   opacity: 0;
   transform: translateX(-10px);
+  transition: all 0.3s ease;
 }
 
-@keyframes serviceItemFadeIn {
-  from {
+@keyframes serviceFadeIn {
+  0% {
     opacity: 0;
     transform: translateX(-10px);
   }
 
-  to {
+  100% {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
 .popup-service-item:hover {
-  background: rgba(255, 215, 0, 0.2);
-  border-left: 3px solid #ffed4e;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 215, 0, 0.3);
   transform: translateX(5px);
 }
 
 .popup-service-item::before {
-  content: '▸';
+  content: '•';
   color: #ffd700;
   font-weight: bold;
   margin-right: 0.5rem;
-}
-
-.popup-cta {
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
-  color: #0d2438;
-  border: none;
-  padding: 1rem 1.5rem;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-  margin-top: 0.5rem;
-}
-
-.popup-cta:hover {
-  background: linear-gradient(135deg, #ffed4e 0%, #fff8b3 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-}
-
-.services-note {
-  text-align: center;
-  color: #b0c4de;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 215, 0, 0.1);
 }
 
 /* Mobile Responsive */
@@ -496,28 +486,234 @@
     justify-content: center;
   }
 
+  ./* ... (keep all previous styles the same until the popup section) */
+  
+  /* Services Popup */
   .services-popup {
-    position: fixed;
+    position: absolute;
     top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    max-width: 400px;
-    max-height: 70vh;
-    overflow-y: auto;
-    z-index: 1000;
-    background: rgba(0, 0, 0, 0.98);
+    left: -420px;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #1e3a5c 0%, #2d4a7c 100%);
+    backdrop-filter: blur(20px);
+    border: 2px solid #ffd700;
+    border-radius: 20px;
+    padding: 0;
+    z-index: 100;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    max-height: 500px;
+    overflow: visible;
+    display: flex;
+    width: 420px;
+    animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    transition: all 0.3s ease;
   }
-
+  
+  .services-popup.closing {
+    animation: slideOut 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+  }
+  
+  @keyframes slideIn {
+    0% {
+      left: -450px;
+      opacity: 0;
+      transform: translateY(-50%) scale(0.95);
+    }
+  
+    100% {
+      left: -420px;
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+  }
+  
+  @keyframes slideOut {
+    0% {
+      left: -420px;
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+  
+    100% {
+      left: -450px;
+      opacity: 0;
+      transform: translateY(-50%) scale(0.95);
+    }
+  }
+  
+  /* Popup Buffer Area */
+  .popup-buffer {
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    z-index: -1;
+  }
+  
+  .popup-content {
+    padding: 2rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .popup-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+  }
+  
+  .popup-icon {
+    font-size: 2rem;
+    background: rgba(255, 215, 0, 0.2);
+    padding: 0.8rem;
+    border-radius: 12px;
+    color: #ffd700;
+  }
+  
+  .popup-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ffd700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
   .popup-services {
-    max-height: 200px;
+    flex: 1;
+    max-height: 350px;
+    overflow-y: auto;
+    margin-bottom: 0;
+    padding-right: 0.5rem;
   }
-
+  
+  /* Custom scrollbar for popup */
+  .popup-services::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .popup-services::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .popup-services::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.4);
+    border-radius: 4px;
+  }
+  
+  .popup-services::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.6);
+  }
+  
   .popup-service-item {
-    font-size: 0.9rem;
-    padding: 0.7rem;
+    font-size: 0.95rem;
+    color: #e6f2ff;
+    margin-bottom: 0.8rem;
+    line-height: 1.5;
+    padding: 1rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    animation: serviceFadeIn 0.5s ease forwards;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+    cursor: default;
   }
-}
+  
+  @keyframes serviceFadeIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .popup-service-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 215, 0, 0.3);
+    transform: translateX(5px);
+  }
+  
+  .popup-service-item::before {
+    content: '•';
+    color: #ffd700;
+    font-weight: bold;
+    margin-right: 0.5rem;
+  }
+  
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .services-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 350px;
+      max-height: 70vh;
+      overflow-y: auto;
+      z-index: 1000;
+      animation: mobileSlideIn 0.4s ease forwards;
+    }
+  
+    .services-popup.closing {
+      animation: mobileSlideOut 0.3s ease forwards;
+    }
+  
+    @keyframes mobileSlideIn {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+  
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+  
+    @keyframes mobileSlideOut {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+  
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+    }
+  
+    .popup-buffer {
+      display: none;
+      /* No buffer needed on mobile */
+    }
+  
+    .popup-content {
+      padding: 1.5rem;
+    }
+  
+    .popup-services {
+      max-height: 300px;
+    }
+  
+    .popup-service-item {
+      font-size: 0.9rem;
+      padding: 0.8rem;
+    }
+  }
+  
+  /* ... (rest of the mobile responsive styles remain the same) */
 
 @media (max-width: 480px) {
   .hero-title {

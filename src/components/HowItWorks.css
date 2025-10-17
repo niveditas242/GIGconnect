@@ -1,0 +1,288 @@
+.how-it-works {
+  padding: 80px 0;
+  background-color: white;
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.typing-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 60px;
+  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.typing-cursor {
+  animation: blink 1s infinite;
+  background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes blink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.steps-wrapper {
+  position: relative;
+}
+
+.steps-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Connector Line */
+.connector-line {
+  position: absolute;
+  top: 75px;
+  left: 10%;
+  right: 10%;
+  height: 3px;
+  background: #e0e0e0;
+  z-index: 1;
+  overflow: visible;
+}
+
+.line-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #2c3e50);
+  transition: width 0.1s linear;
+  width: 0%;
+}
+
+.line-cursor {
+  position: absolute;
+  top: -4px;
+  width: 8px;
+  height: 11px;
+  background: #2c3e50;
+  border-radius: 2px;
+  animation: lineCursorBlink 0.8s infinite;
+  transition: left 0.1s linear;
+}
+
+@keyframes lineCursorBlink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Step Cards - Initially Hidden */
+.step-card {
+  text-align: center;
+  padding: 40px 20px;
+  position: relative;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s ease;
+  opacity: 0;
+  transform: translateY(30px);
+  z-index: 2;
+}
+
+/* Step card animations only when triggered */
+.step-card.step-visible {
+  animation: stepSlideUp 0.8s ease forwards;
+}
+
+.step-1.step-visible {
+  animation-delay: 0.2s;
+}
+
+.step-2.step-visible {
+  animation-delay: 0.5s;
+}
+
+.step-3.step-visible {
+  animation-delay: 0.8s;
+}
+
+@keyframes stepSlideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-card:hover {
+  transform: translateY(-10px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(52, 152, 219, 0.2);
+}
+
+.step-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.step-icon.bounce {
+  animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-10px) scale(1.1);
+  }
+}
+
+.step-number {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all 0.3s ease;
+}
+
+/* Step number animations when card becomes visible */
+.step-card.step-visible .step-number {
+  animation: numberPopIn 0.6s ease forwards;
+}
+
+.step-1.step-visible .step-number {
+  animation-delay: 0.4s;
+}
+
+.step-2.step-visible .step-number {
+  animation-delay: 0.7s;
+}
+
+.step-3.step-visible .step-number {
+  animation-delay: 1s;
+}
+
+@keyframes numberPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  70% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.step-title {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.step-description {
+  font-size: 1.1rem;
+  color: #5d6d7e;
+  line-height: 1.6;
+  max-width: 250px;
+  margin: 0 auto;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 767px) {
+  .typing-title {
+    font-size: 2rem;
+    min-height: 50px;
+  }
+
+  .steps-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .step-card {
+    padding: 30px 20px;
+  }
+
+  /* Hide connector line on mobile */
+  .connector-line {
+    display: none;
+  }
+
+  /* Show all steps immediately on mobile with staggered delays */
+  .step-card.step-visible {
+    animation-delay: 0.2s !important;
+  }
+
+  .step-2.step-visible {
+    animation-delay: 0.4s !important;
+  }
+
+  .step-3.step-visible {
+    animation-delay: 0.6s !important;
+  }
+
+  .step-card.step-visible .step-number {
+    animation-delay: 0.3s !important;
+  }
+
+  .step-2.step-visible .step-number {
+    animation-delay: 0.5s !important;
+  }
+
+  .step-3.step-visible .step-number {
+    animation-delay: 0.7s !important;
+  }
+}
