@@ -28,20 +28,21 @@ const Footer = () => {
               </div>
             </div>
 
+            {/* Create Portfolio Section */}
             <div className="footer-column">
-              <h4 className="footer-title">For Freelancers</h4>
+              <h4 className="footer-title">Create Portfolio</h4>
               <div className="footer-links">
-                <a href="/find-work" className="footer-link">
-                  Find Work
+                <a href="/portfolio-builder" className="footer-link">
+                  Portfolio Builder
                 </a>
-                <a href="/portfolio" className="footer-link">
-                  Create Portfolio
+                <a href="/add-projects" className="footer-link">
+                  Add Projects
                 </a>
-                <a href="/resources" className="footer-link">
-                  Resources
+                <a href="/skills-showcase" className="footer-link">
+                  Showcase Skills
                 </a>
-                <a href="/community" className="footer-link">
-                  Community
+                <a href="/get-discovered" className="footer-link">
+                  Get Discovered
                 </a>
               </div>
             </div>
@@ -55,11 +56,23 @@ const Footer = () => {
                 <a href="/find-talent" className="footer-link">
                   Find Talent
                 </a>
-                <a href="/enterprise" className="footer-link">
-                  Enterprise
+                <a href="/hiring-guide" className="footer-link">
+                  Hiring Guide
                 </a>
-                <a href="/solutions" className="footer-link">
-                  Solutions
+              </div>
+            </div>
+
+            <div className="footer-column">
+              <h4 className="footer-title">Help Center</h4>
+              <div className="footer-links">
+                <a href="/help-center" className="footer-link">
+                  Help & Support
+                </a>
+                <a href="/faq" className="footer-link">
+                  FAQ
+                </a>
+                <a href="/contact-support" className="footer-link">
+                  Contact Support
                 </a>
               </div>
             </div>
@@ -73,26 +86,8 @@ const Footer = () => {
                 <a href="/careers" className="footer-link">
                   Careers
                 </a>
-                <a href="/contact" className="footer-link">
-                  Contact
-                </a>
-              </div>
-            </div>
-
-            <div className="footer-column">
-              <h4 className="footer-title">Support</h4>
-              <div className="footer-links">
-                <a href="/help" className="footer-link">
-                  Help Center
-                </a>
-                <a href="/privacy" className="footer-link">
-                  Privacy Policy
-                </a>
-                <a href="/terms" className="footer-link">
-                  Terms of Service
-                </a>
-                <a href="/security" className="footer-link">
-                  Security
+                <a href="/blog" className="footer-link">
+                  Blog
                 </a>
               </div>
             </div>

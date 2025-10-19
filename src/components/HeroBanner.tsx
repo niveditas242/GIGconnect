@@ -1,15 +1,51 @@
-import React, { useState, useRef } from "react";
+// src/components/HeroBanner.tsx
+import React, { useState, useRef, useEffect } from "react";
 import "./HeroBanner.css";
+import { BaseComponentProps } from "../types";
 
-const HeroBanner: React.FC = () => {
+// Custom event type for TypeScript
+declare global {
+  interface WindowEventMap {
+    highlightCategories: CustomEvent;
+  }
+}
+
+interface ServiceCategory {
+  icon: string;
+  title: string;
+  services: string[];
+}
+
+const HeroBanner: React.FC<BaseComponentProps> = ({ id }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [animatedServices, setAnimatedServices] = useState<string[]>([]);
   const [isClosing, setIsClosing] = useState(false);
+  const [highlightCards, setHighlightCards] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const serviceCategories = [
+  // Listen for categories highlight event
+  useEffect(() => {
+    const handleHighlightCategories = () => {
+      setHighlightCards(true);
+      // Remove highlight after animation
+      setTimeout(() => {
+        setHighlightCards(false);
+      }, 2000);
+    };
+
+    window.addEventListener("highlightCategories", handleHighlightCategories);
+
+    return () => {
+      window.removeEventListener(
+        "highlightCategories",
+        handleHighlightCategories
+      );
+    };
+  }, []);
+
+  const serviceCategories: ServiceCategory[] = [
     {
       icon: "🧑‍💻",
       title: "Technology & Programming",
@@ -192,7 +228,7 @@ const HeroBanner: React.FC = () => {
   };
 
   return (
-    <section className="hero-banner">
+    <section className="hero-banner" id={id}>
       <div className="hero-container">
         {/* Main Content */}
         <div className="hero-content">
@@ -275,7 +311,9 @@ const HeroBanner: React.FC = () => {
             {getVisibleCategories().map((category, index) => (
               <div
                 key={index}
-                className="category-card"
+                className={`category-card ${
+                  highlightCards ? "card-highlight" : ""
+                }`}
                 onMouseEnter={() => handleCategoryHover(category.title)}
                 onMouseLeave={handleCategoryLeave}
               >

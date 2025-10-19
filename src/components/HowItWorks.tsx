@@ -1,7 +1,13 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
 import "./HowItWorks.css";
 
-const HowItWorks = () => {
+// Add the TypeScript interface for props
+interface HowItWorksProps {
+  id: string;
+  className?: string;
+}
+
+const HowItWorks: React.FC<HowItWorksProps> = ({ id }) => {
   const [displayTitle, setDisplayTitle] = useState("");
   const [titleIndex, setTitleIndex] = useState(0);
   const [lineProgress, setLineProgress] = useState(0);
@@ -97,7 +103,7 @@ const HowItWorks = () => {
   }, []);
 
   return (
-    <section className="how-it-works" ref={sectionRef}>
+    <section className="how-it-works" ref={sectionRef} id={id}>
       <div className="container">
         <h2 className="section-title typing-title">
           {displayTitle}

@@ -1,11 +1,23 @@
+// src/components/Testimonials.tsx
 import React, { useState, useEffect, useRef } from "react";
 import "./Testimonials.css";
+import { BaseComponentProps } from "../types";
 
-const Testimonials = () => {
+interface Testimonial {
+  id: number;
+  quote: string;
+  author: string;
+  type: string;
+  character: string;
+  animation: string;
+  bgColor: string;
+}
+
+const Testimonials: React.FC<BaseComponentProps> = ({ id }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const testimonials = [
+  const testimonials: Testimonial[] = [
     {
       id: 1,
       quote:
@@ -50,7 +62,7 @@ const Testimonials = () => {
   }, []);
 
   return (
-    <section className="testimonials" ref={sectionRef}>
+    <section className="testimonials" ref={sectionRef} id={id}>
       <div className="container">
         <h2 className="section-title">Where Talent Meets Opportunity</h2>
         <p className="section-subtitle">

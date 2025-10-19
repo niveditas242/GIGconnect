@@ -1,7 +1,9 @@
+// src/components/GlobalNetwork.tsx
 import React, { useState, useEffect, useRef } from "react";
 import "./GlobalNetwork.css";
+import { BaseComponentProps } from "../types";
 
-const GlobalNetwork = () => {
+const GlobalNetwork: React.FC<BaseComponentProps> = ({ id }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [counter1, setCounter1] = useState(0);
   const [counter2, setCounter2] = useState(0);
@@ -63,10 +65,10 @@ const GlobalNetwork = () => {
 
       return () => clearInterval(counterInterval);
     }
-  }, [isVisible]);
+  }, [isVisible, stats]);
 
   return (
-    <section className="global-network" ref={sectionRef}>
+    <section className="global-network" ref={sectionRef} id={id}>
       <div className="container">
         <div className={`network-content ${isVisible ? "animate-in" : ""}`}>
           <h2 className="network-title">Tap into a global talent network</h2>
