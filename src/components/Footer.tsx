@@ -1,8 +1,45 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "./Footer.css";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+
+  const handleFindTalent = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    // If we're already on home page, just scroll to section
+    if (window.location.pathname === "/") {
+      const hireSection = document.getElementById("hire");
+      if (hireSection) {
+        hireSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    } else {
+      // Navigate to home page and then scroll
+      window.location.href = "/#hire";
+    }
+  };
+
+  const handlePostProject = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    // If we're already on home page, just scroll to section
+    if (window.location.pathname === "/") {
+      const hireSection = document.getElementById("hire");
+      if (hireSection) {
+        hireSection.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    } else {
+      // Navigate to home page and then scroll
+      window.location.href = "/#hire";
+    }
+  };
 
   return (
     <footer className="footer">
@@ -32,28 +69,37 @@ const Footer = () => {
             <div className="footer-column">
               <h4 className="footer-title">Create Portfolio</h4>
               <div className="footer-links">
-                <a href="/portfolio-builder" className="footer-link">
+                <Link to="/portfolio" className="footer-link">
                   Portfolio Builder
-                </a>
-                <a href="/add-projects" className="footer-link">
+                </Link>
+                <Link to="/portfolio" className="footer-link">
                   Add Projects
-                </a>
-                <a href="/skills-showcase" className="footer-link">
+                </Link>
+                <Link to="/portfolio" className="footer-link">
                   Showcase Skills
-                </a>
-                <a href="/get-discovered" className="footer-link">
+                </Link>
+                <Link to="/portfolio" className="footer-link">
                   Get Discovered
-                </a>
+                </Link>
               </div>
             </div>
 
+            {/* For Clients Section */}
             <div className="footer-column">
               <h4 className="footer-title">For Clients</h4>
               <div className="footer-links">
-                <a href="/post-project" className="footer-link">
+                <a
+                  href="/#hire"
+                  className="footer-link"
+                  onClick={handlePostProject}
+                >
                   Post a Project
                 </a>
-                <a href="/find-talent" className="footer-link">
+                <a
+                  href="/#hire"
+                  className="footer-link"
+                  onClick={handleFindTalent}
+                >
                   Find Talent
                 </a>
                 <a href="/hiring-guide" className="footer-link">
@@ -62,27 +108,29 @@ const Footer = () => {
               </div>
             </div>
 
+            {/* Help Center Section - UPDATED */}
             <div className="footer-column">
               <h4 className="footer-title">Help Center</h4>
               <div className="footer-links">
-                <a href="/help-center" className="footer-link">
+                <Link to="/contact-support" className="footer-link">
                   Help & Support
-                </a>
+                </Link>
                 <a href="/faq" className="footer-link">
                   FAQ
                 </a>
-                <a href="/contact-support" className="footer-link">
+                <Link to="/contact-support" className="footer-link">
                   Contact Support
-                </a>
+                </Link>
               </div>
             </div>
 
+            {/* Company Section */}
             <div className="footer-column">
               <h4 className="footer-title">Company</h4>
               <div className="footer-links">
-                <a href="/about" className="footer-link">
+                <Link to="/about" className="footer-link">
                   About Us
-                </a>
+                </Link>
                 <a href="/careers" className="footer-link">
                   Careers
                 </a>
@@ -105,9 +153,9 @@ const Footer = () => {
               <a href="/terms" className="footer-legal-link">
                 Terms of Service
               </a>
-              <a href="/contact" className="footer-legal-link">
+              <Link to="/contact-support" className="footer-legal-link">
                 Contact Us
-              </a>
+              </Link>
             </div>
           </div>
         </div>

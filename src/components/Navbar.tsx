@@ -6,9 +6,9 @@ const Navbar: React.FC = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        {/* Logo Section */}
+        {/* Logo Section - UPDATED: Now links to About Us */}
         <div className="logo-section">
-          <Link to="/" className="logo-link">
+          <Link to="/about" className="logo-link">
             <div className="logo-wrapper">
               <img
                 src="/src/assets/logos/img7.png"
@@ -24,8 +24,11 @@ const Navbar: React.FC = () => {
           </Link>
         </div>
 
-        {/* Navigation Menu - UPDATED with Link components */}
+        {/* Navigation Menu - UPDATED: Added Home link */}
         <div className="nav-menu">
+          <Link to="/" className="nav-link">
+            <span>Home</span>
+          </Link>
           <a href="#how-it-works" className="nav-link">
             <span>How It Works</span>
           </a>
@@ -37,7 +40,7 @@ const Navbar: React.FC = () => {
           </Link>
         </div>
 
-        {/* Auth & CTA Section */}
+        {/* Auth Section */}
         <div className="nav-actions">
           <div className="auth-buttons">
             <a href="#login" className="login-btn">
@@ -47,10 +50,6 @@ const Navbar: React.FC = () => {
               Sign Up
             </a>
           </div>
-          <button className="cta-button">
-            <span className="cta-icon">🚀</span>
-            Post a Project
-          </button>
         </div>
       </div>
     </nav>

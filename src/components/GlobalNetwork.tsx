@@ -10,6 +10,7 @@ const GlobalNetwork: React.FC<BaseComponentProps> = ({ id }) => {
   const [counter3, setCounter3] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
 
+  // Move stats outside of component or use useMemo to prevent recreation
   const stats = [
     { target: 50, suffix: "K+", label: "Freelancers" },
     { target: 100, suffix: "+", label: "Countries" },
@@ -37,7 +38,7 @@ const GlobalNetwork: React.FC<BaseComponentProps> = ({ id }) => {
     };
   }, []);
 
-  // Counter animations
+  // Counter animations - FIXED: Remove stats from dependencies
   useEffect(() => {
     if (isVisible) {
       const duration = 2000; // 2 seconds
@@ -50,22 +51,22 @@ const GlobalNetwork: React.FC<BaseComponentProps> = ({ id }) => {
         currentStep++;
         const progress = currentStep / steps;
 
-        setCounter1(Math.floor(stats[0].target * progress));
-        setCounter2(Math.floor(stats[1].target * progress));
-        setCounter3(Math.floor(stats[2].target * progress));
+        setCounter1(Math.floor(50 * progress));
+        setCounter2(Math.floor(100 * progress));
+        setCounter3(Math.floor(95 * progress));
 
         if (currentStep >= steps) {
           clearInterval(counterInterval);
           // Set final values
-          setCounter1(stats[0].target);
-          setCounter2(stats[1].target);
-          setCounter3(stats[2].target);
+          setCounter1(50);
+          setCounter2(100);
+          setCounter3(95);
         }
       }, stepDuration);
 
       return () => clearInterval(counterInterval);
     }
-  }, [isVisible, stats]);
+  }, [isVisible]); // Removed stats from dependencies
 
   return (
     <section className="global-network" ref={sectionRef} id={id}>

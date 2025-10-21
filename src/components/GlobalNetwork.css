@@ -5,10 +5,15 @@
   text-align: center;
   overflow: hidden;
   position: relative;
-  /* ADDED: Remove any borders that might create lines */
   border: none;
   border-top: none;
   border-bottom: none;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 .network-content {
@@ -97,7 +102,8 @@
   font-size: 3rem;
   font-weight: bold;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  /* MATCHING NAVBAR GRADIENT: Dark blue theme */
+  background: linear-gradient(135deg, #0d2438 0%, #163152 50%, #1e3a5c 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -110,6 +116,19 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: 600;
+}
+
+.global-network::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(13, 36, 56, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(22, 49, 82, 0.05) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 /* Responsive Design */

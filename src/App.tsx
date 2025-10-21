@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Navbar from "./components/Navbar";
@@ -8,6 +8,7 @@ import GlobalNetwork from "./components/GlobalNetwork";
 import Testimonials from "./components/Testimonials";
 import Footer from "./components/Footer";
 import PortfolioBuilder from "./components/PortfolioBuilder";
+import AboutUs from "./components/AboutUs/AboutUs";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,6 +46,39 @@ function App() {
   const handlePostProject = () => {
     console.log("Navigate to post project page");
   };
+
+  // 👇 ADDED: Re-trigger animation when section is visible
+  useEffect(() => {
+    const title = document.querySelectorAll(".title-word");
+    const subtitle = document.querySelector(".animated-subtitle");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Restart animations
+            title.forEach((el) => {
+              (el as HTMLElement).style.animation = "none";
+              (el as HTMLElement).offsetHeight; // reflow
+              (el as HTMLElement).style.animation = "";
+            });
+            if (subtitle) {
+              (subtitle as HTMLElement).style.animation = "none";
+              (subtitle as HTMLElement).offsetHeight;
+              (subtitle as HTMLElement).style.animation = "";
+            }
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    const section = document.querySelector(".hire-section");
+    if (section) observer.observe(section);
+
+    return () => observer.disconnect();
+  }, []);
+  // 👆 END CHANGE
 
   return (
     <Router>
@@ -199,16 +233,18 @@ function App() {
                       </div>
                     </div>
                   </section>
+
                   <GlobalNetwork id="global-network" />
                   <Testimonials id="testimonials" />
                 </>
               }
             />
 
-            <Route
-              path="/portfolio"
-              element={<PortfolioBuilder id="portfolio-builder" />}
-            />
+            {/* Portfolio Builder Route */}
+            <Route path="/portfolio" element={<PortfolioBuilder />} />
+
+            {/* About Us Route - ADDED */}
+            <Route path="/about" element={<AboutUs />} />
           </Routes>
 
           <Footer />
