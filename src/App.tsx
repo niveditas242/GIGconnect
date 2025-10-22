@@ -9,12 +9,16 @@ import Testimonials from "./components/Testimonials";
 import Footer from "./components/Footer";
 import PortfolioBuilder from "./components/PortfolioBuilder";
 import AboutUs from "./components/AboutUs/AboutUs";
+import HelpSupport from "./components/HelpSupport/HelpSupport";
+import ChatBot from "./components/ChatBot/ChatBot"; // Add this import
+import ChatTrigger from "./components/ChatTrigger/ChatTrigger"; // Add this import
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [location, setLocation] = useState("");
   const [category, setCategory] = useState("");
   const [experience, setExperience] = useState("");
+  const [isChatOpen, setIsChatOpen] = useState(false); // Add chat state
 
   const freelancerCategories = [
     "Web Development",
@@ -45,6 +49,15 @@ function App() {
 
   const handlePostProject = () => {
     console.log("Navigate to post project page");
+  };
+
+  // Chat functions
+  const handleChatToggle = () => {
+    setIsChatOpen(!isChatOpen);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
   };
 
   // 👇 ADDED: Re-trigger animation when section is visible
@@ -245,10 +258,17 @@ function App() {
 
             {/* About Us Route - ADDED */}
             <Route path="/about" element={<AboutUs />} />
+
+            {/* Help & Support Route - ADDED */}
+            <Route path="/help-support" element={<HelpSupport />} />
           </Routes>
 
           <Footer />
         </div>
+
+        {/* Chat System - Add these components at the bottom */}
+        <ChatTrigger onClick={handleChatToggle} />
+        <ChatBot isOpen={isChatOpen} onClose={handleCloseChat} />
       </div>
     </Router>
   );
