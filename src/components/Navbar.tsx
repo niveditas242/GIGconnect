@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "./Navbar.css";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
 
 const Navbar: React.FC = () => {
   return (
@@ -41,16 +42,18 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Auth Section */}
+        
         <div className="nav-actions">
           <div className="auth-buttons">
-            <a href="#login" className="login-btn">
+            <Link to="/login" className="login-btn">
               Log In
-            </a>
-            <a href="#signup" className="signup-btn">
+            </Link>
+            <Link to="/signup" className="signup-btn">
               Sign Up
-            </a>
+            </Link>
           </div>
-        </div>
+        </div> 
+        
       </div>
     </nav>
   );

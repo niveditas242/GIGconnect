@@ -12,6 +12,8 @@ import AboutUs from "./components/AboutUs/AboutUs";
 import HelpSupport from "./components/HelpSupport/HelpSupport";
 import ChatBot from "./components/ChatBot/ChatBot"; // Add this import
 import ChatTrigger from "./components/ChatTrigger/ChatTrigger"; // Add this import
+import Login from "./components/Login";
+import SignUp from "./components/SignUp";
 
 function App() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -261,6 +263,13 @@ function App() {
 
             {/* Help & Support Route - ADDED */}
             <Route path="/help-support" element={<HelpSupport />} />
+
+            <Route path="/signup" element={<SignUp />}></Route>
+
+            <Route path="/login" element={<Login onLogin={function (token: string): void {
+              throw new Error("Function not implemented.");
+            } } />}></Route>
+
           </Routes>
 
           <Footer />
