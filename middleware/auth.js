@@ -1,6 +1,6 @@
-// middleware/auth.js
-import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+// backend/middleware/auth.js
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-fallback-secret-key";
 
@@ -11,7 +11,7 @@ const auth = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "No token, authorization denied",
+        message: "No token provided, access denied",
       });
     }
 
@@ -25,15 +25,31 @@ const auth = async (req, res, next) => {
       });
     }
 
+    req.userId = decoded.userId;
     req.user = user;
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
-    res.status(401).json({
+
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Token expired",
+      });
+    }
+
+    res.status(500).json({
       success: false,
-      message: "Token is not valid",
+      message: "Server error in authentication",
     });
   }
 };
 
-export default auth;
+module.exports = auth;

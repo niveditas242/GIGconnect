@@ -1,4 +1,5 @@
-import mongoose from "mongoose";
+// backend/models/Freelancer.js
+const mongoose = require("mongoose");
 
 const freelancerSchema = new mongoose.Schema(
   {
@@ -6,6 +7,7 @@ const freelancerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      unique: true,
     },
     name: {
       type: String,
@@ -16,7 +18,6 @@ const freelancerSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true,
       lowercase: true,
     },
     title: {
@@ -27,6 +28,7 @@ const freelancerSchema = new mongoose.Schema(
     description: {
       type: String,
       default: "",
+      maxlength: 1000,
     },
     skills: [
       {
@@ -45,16 +47,18 @@ const freelancerSchema = new mongoose.Schema(
     },
     hourlyRate: {
       type: Number,
+      min: 0,
       default: 0,
     },
     rating: {
       type: Number,
-      default: 0,
       min: 0,
       max: 5,
+      default: 0,
     },
     completedProjects: {
       type: Number,
+      min: 0,
       default: 0,
     },
     availability: {
@@ -71,14 +75,22 @@ const freelancerSchema = new mongoose.Schema(
         title: String,
         description: String,
         image: String,
-        url: String,
+        link: String,
+        technologies: [String],
       },
     ],
+    socialLinks: {
+      website: String,
+      github: String,
+      linkedin: String,
+      twitter: String,
+    },
     education: [
       {
         degree: String,
         institution: String,
         year: Number,
+        description: String,
       },
     ],
     experience: [
@@ -89,16 +101,40 @@ const freelancerSchema = new mongoose.Schema(
         description: String,
       },
     ],
+    certifications: [
+      {
+        name: String,
+        issuer: String,
+        year: Number,
+        credentialId: String,
+      },
+    ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Index for better query performance
-freelancerSchema.index({ userId: 1 });
+// Indexes for better search performance
 freelancerSchema.index({ skills: 1 });
 freelancerSchema.index({ level: 1 });
+freelancerSchema.index({ location: 1 });
 freelancerSchema.index({ hourlyRate: 1 });
+freelancerSchema.index({ rating: -1 });
+freelancerSchema.index({ userId: 1 });
 
-export default mongoose.model("Freelancer", freelancerSchema);
+// Update updatedAt timestamp before saving
+freelancerSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+module.exports = mongoose.model("Freelancer", freelancerSchema);

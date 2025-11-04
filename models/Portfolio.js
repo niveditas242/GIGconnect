@@ -1,103 +1,131 @@
-import mongoose from "mongoose";
+// backend/models/Portfolio.js
+const mongoose = require("mongoose");
 
-const projectSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
-  },
-  image: {
-    type: String,
-    default: ""
-  },
-  technologies: [{
-    type: String
-  }],
-  category: {
-    type: String,
-    enum: ["web-development", "mobile-app", "ui-ux", "graphic-design", "other"],
-    default: "web-development"
-  },
-  liveUrl: {
-    type: String
-  },
-  githubUrl: {
-    type: String
-  }
-}, {
-  timestamps: true
-});
-
-const portfolioSchema = new mongoose.Schema({
-  userId: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  profile: {
-    name: {
-      type: String,
-      required: true
+const portfolioSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     title: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
+      maxlength: 100,
     },
-    bio: {
+    description: {
       type: String,
-      required: true
+      required: true,
+      maxlength: 1000,
     },
-    location: {
+    skills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    projects: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          required: true,
+        },
+        image: {
+          type: String,
+          default: "",
+        },
+        link: {
+          type: String,
+          default: "",
+        },
+        technologies: [String],
+        startDate: Date,
+        endDate: Date,
+        featured: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    experience: [
+      {
+        position: String,
+        company: String,
+        duration: String,
+        description: String,
+        current: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+    education: [
+      {
+        degree: String,
+        institution: String,
+        year: Number,
+        description: String,
+      },
+    ],
+    certifications: [
+      {
+        name: String,
+        issuer: String,
+        year: Number,
+        credentialId: String,
+      },
+    ],
+    socialLinks: {
+      website: String,
+      github: String,
+      linkedin: String,
+      twitter: String,
+      behance: String,
+      dribbble: String,
+    },
+    template: {
       type: String,
-      default: ""
+      enum: ["modern", "professional", "creative", "minimal"],
+      default: "modern",
     },
-    hourlyRate: {
+    isPublished: {
+      type: Boolean,
+      default: false,
+    },
+    views: {
       type: Number,
-      default: 0
+      default: 0,
     },
-    email: {
-      type: String,
-      required: true
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
-    phone: {
-      type: String,
-      default: ""
+    updatedAt: {
+      type: Date,
+      default: Date.now,
     },
-    avatar: {
-      type: String,
-      default: ""
-    }
   },
-  skills: [{
-    type: String
-  }],
-  projects: [projectSchema],
-  experience: [{
-    company: String,
-    position: String,
-    duration: String,
-    description: String
-  }],
-  education: [{
-    institution: String,
-    degree: String,
-    year: String
-  }],
-  socialLinks: {
-    github: String,
-    linkedin: String,
-    twitter: String,
-    website: String
-  },
-  isPublished: {
-    type: Boolean,
-    default: false
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true
+);
+
+// Indexes
+portfolioSchema.index({ userId: 1 });
+portfolioSchema.index({ skills: 1 });
+portfolioSchema.index({ isPublished: 1 });
+portfolioSchema.index({ createdAt: -1 });
+
+// Update updatedAt timestamp before saving
+portfolioSchema.pre("save", function (next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
-export default mongoose.model("Portfolio", portfolioSchema);
+module.exports = mongoose.model("Portfolio", portfolioSchema);

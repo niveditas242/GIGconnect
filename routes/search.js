@@ -5,7 +5,7 @@ const router = express.Router();
 router.get("/test", (req, res) => {
   res.json({
     success: true,
-    message: "Freelancer routes are working!",
+    message: "Search routes are working!",
     timestamp: new Date().toISOString(),
   });
 });

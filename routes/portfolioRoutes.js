@@ -1,16 +1,13 @@
-import express from "express";
-import {
-  getPortfolio,
-  savePortfolio,
-  uploadImage,
-  publishPortfolio
-} from "../controllers/portfolioController.js";
-
+const express = require("express");
 const router = express.Router();
 
-router.get("/:userId", getPortfolio);
-router.post("/:userId", savePortfolio);
-router.post("/:userId/publish", publishPortfolio);
-router.post("/upload/image", uploadImage);
+// Simple test route
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Portfolio routes are working!",
+    timestamp: new Date().toISOString(),
+  });
+});
 
-export default router;
+module.exports = router;

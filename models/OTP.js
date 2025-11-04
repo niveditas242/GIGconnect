@@ -1,6 +1,7 @@
-﻿import mongoose from "mongoose";
+﻿// backend/models/OTP.js
+const mongoose = require("mongoose");
 
-const otpSchema = new mongoose.Schema({
+const OTPSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
@@ -13,8 +14,9 @@ const otpSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["registration", "password_reset"],
     required: true,
+    enum: ["registration", "password_reset"],
+    default: "registration",
   },
   expiresAt: {
     type: Date,
@@ -24,10 +26,6 @@ const otpSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  attempts: {
-    type: Number,
-    default: 0,
-  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -35,10 +33,10 @@ const otpSchema = new mongoose.Schema({
 });
 
 // Create TTL index for automatic expiration
-otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+OTPSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Index for faster queries
-otpSchema.index({ email: 1, type: 1 });
-otpSchema.index({ email: 1, otp: 1 });
+// Index for better query performance
+OTPSchema.index({ email: 1, type: 1 });
+OTPSchema.index({ email: 1, otp: 1, type: 1 });
 
-export default mongoose.model("OTP", otpSchema);
+module.exports = mongoose.model("OTP", OTPSchema);
