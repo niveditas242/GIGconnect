@@ -30,13 +30,27 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["freelancer", "client"],
-      default: "freelancer",
+      // default to client so frontend does not need to supply userType
+      default: "client",
     },
     title: {
       type: String,
-      required: [true, "Title is required"],
       trim: true,
+      default: "",
+      // required only when userType is freelancer
+      required: function () {
+        return this.userType === "freelancer";
+      },
       maxlength: [100, "Title cannot be more than 100 characters"],
+      validate: {
+        validator: function (v) {
+          if (this.userType === "freelancer") {
+            return typeof v === "string" && v.trim().length > 0;
+          }
+          return true;
+        },
+        message: "Title is required",
+      },
     },
     skills: [
       {
@@ -85,7 +99,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Index for better search performance
+// Indexes for search performance
 userSchema.index({ email: 1 });
 userSchema.index({ userType: 1 });
 userSchema.index({ skills: 1 });
@@ -103,13 +117,13 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Update updatedAt timestamp before saving
+// Update updatedAt timestamp
 userSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-// Compare password method
+// Compare password helper
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {
     return await bcrypt.compare(candidatePassword, this.password);
