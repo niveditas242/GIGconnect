@@ -26,6 +26,7 @@ interface PortfolioData {
   education: string;
   skills: string[];
   projects: Project[];
+  profilePhoto: string;
   socialLinks: {
     github?: string;
     linkedin?: string;
@@ -47,6 +48,7 @@ const PortfolioBuilder: React.FC = () => {
     education: "",
     skills: user?.skills || [],
     projects: [],
+    profilePhoto: "",
     socialLinks: {},
   });
 
@@ -60,6 +62,7 @@ const PortfolioBuilder: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Check if portfolio has content
   const hasContent = () => {
@@ -70,6 +73,58 @@ const PortfolioBuilder: React.FC = () => {
       portfolio.skills.length > 0 ||
       portfolio.projects.length > 0
     );
+  };
+
+  // Handle profile photo upload
+  const handleProfilePhotoUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      // Convert image to base64 for preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setPortfolio((prev) => ({
+          ...prev,
+          profilePhoto: base64String,
+        }));
+        setIsUploadingPhoto(false);
+        toast.success("Profile photo uploaded successfully!");
+      };
+      reader.onerror = () => {
+        setIsUploadingPhoto(false);
+        toast.error("Failed to upload profile photo");
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setIsUploadingPhoto(false);
+      toast.error("Failed to upload profile photo");
+    }
+  };
+
+  // Remove profile photo
+  const removeProfilePhoto = () => {
+    setPortfolio((prev) => ({
+      ...prev,
+      profilePhoto: "",
+    }));
+    toast.info("Profile photo removed");
   };
 
   // Publish Portfolio to Backend
@@ -92,6 +147,10 @@ const PortfolioBuilder: React.FC = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            ...portfolio,
+            profilePhoto: portfolio.profilePhoto, // Include profile photo in the data
+          }),
         }
       );
 
@@ -124,30 +183,21 @@ const PortfolioBuilder: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Save each project to backend
-      for (const project of portfolio.projects) {
-        const response = await fetch(
-          "http://localhost:5000/api/portfolio/projects",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              title: project.title,
-              description: project.description,
-              technologies: project.technologies,
-              category: project.category,
-              liveUrl: project.liveUrl,
-              githubUrl: project.githubUrl,
-            }),
-          }
-        );
+      // Save portfolio data including profile photo
+      const response = await fetch("http://localhost:5000/api/portfolio/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...portfolio,
+          profilePhoto: portfolio.profilePhoto,
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error("Failed to save project");
-        }
+      if (!response.ok) {
+        throw new Error("Failed to save portfolio");
       }
 
       toast.success("💾 Portfolio saved successfully!");
@@ -159,8 +209,8 @@ const PortfolioBuilder: React.FC = () => {
     }
   };
 
-  // Download portfolio as PDF
-  const downloadPortfolio = () => {
+  // Download portfolio as PDF using html2canvas and jsPDF
+  const downloadPortfolio = async () => {
     if (!hasContent()) {
       toast.error(
         "Please add some content to your portfolio before downloading."
@@ -168,8 +218,73 @@ const PortfolioBuilder: React.FC = () => {
       return;
     }
 
-    // Create PDF content using window.print() method with custom styling
-    const printContent = `
+    try {
+      // Dynamically import the libraries
+      const html2canvas = (await import("html2canvas")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      // Get the preview element
+      const previewElement = document.querySelector(
+        ".portfolio-preview"
+      ) as HTMLElement;
+
+      if (!previewElement) {
+        toast.error("Could not find portfolio preview.");
+        return;
+      }
+
+      // Create canvas from the preview
+      const canvas = await html2canvas(previewElement, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      // Create PDF
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Save the PDF
+      pdf.save(`portfolio-${portfolio.name || "my-portfolio"}.pdf`);
+      toast.success("📄 Portfolio downloaded as PDF!");
+    } catch (error) {
+      console.error("PDF download error:", error);
+      toast.error("Failed to download PDF. Please try again.");
+
+      // Fallback: Use print method
+      const printContent = createPrintContent();
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
+    }
+  };
+
+  // Helper function to create print content (fallback)
+  const createPrintContent = () => {
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -196,20 +311,36 @@ const PortfolioBuilder: React.FC = () => {
     .header {
       text-align: center;
       margin-bottom: 40px;
-      border-bottom: 3px solid #ffd700;
+      border-bottom: 3px solid #6366f1;
       padding-bottom: 20px;
     }
     
-    .header h1 {
+    .profile-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 20px;
+    }
+    
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #6366f1;
+    }
+    
+    .profile-text h1 {
       font-size: 2.5rem;
       font-weight: 700;
       color: #0d2438;
       margin-bottom: 10px;
     }
     
-    .header .title {
+    .profile-text .title {
       font-size: 1.3rem;
-      color: #667eea;
+      color: #6366f1;
       font-weight: 600;
       margin-bottom: 15px;
     }
@@ -226,6 +357,7 @@ const PortfolioBuilder: React.FC = () => {
     
     .section {
       margin-bottom: 30px;
+      page-break-inside: avoid;
     }
     
     .section h2 {
@@ -252,7 +384,7 @@ const PortfolioBuilder: React.FC = () => {
     }
     
     .skill-tag {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
       color: white;
       padding: 6px 12px;
       border-radius: 15px;
@@ -266,6 +398,7 @@ const PortfolioBuilder: React.FC = () => {
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       background: #f7fafc;
+      page-break-inside: avoid;
     }
     
     .project-header {
@@ -282,7 +415,7 @@ const PortfolioBuilder: React.FC = () => {
     }
     
     .project-category {
-      background: #667eea;
+      background: #6366f1;
       color: white;
       padding: 4px 10px;
       border-radius: 12px;
@@ -304,7 +437,7 @@ const PortfolioBuilder: React.FC = () => {
     }
     
     .project-link {
-      color: #667eea;
+      color: #6366f1;
       text-decoration: none;
       font-weight: 500;
       font-size: 0.9rem;
@@ -344,17 +477,25 @@ const PortfolioBuilder: React.FC = () => {
       body {
         padding: 20px;
       }
-      
       .no-print {
-        display: none;
+        display: none !important;
       }
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>${portfolio.name || "Professional Portfolio"}</h1>
-    <div class="title">${portfolio.title || "Professional"}</div>
+    <div class="profile-header">
+      ${
+        portfolio.profilePhoto
+          ? `<img src="${portfolio.profilePhoto}" class="profile-avatar" alt="${portfolio.name}">`
+          : ""
+      }
+      <div class="profile-text">
+        <h1>${portfolio.name || "Professional Portfolio"}</h1>
+        <div class="title">${portfolio.title || "Professional"}</div>
+      </div>
+    </div>
     <div class="contact-info">
       ${portfolio.email ? `<div>📧 ${portfolio.email}</div>` : ""}
       ${portfolio.phone ? `<div>📞 ${portfolio.phone}</div>` : ""}
@@ -460,53 +601,8 @@ const PortfolioBuilder: React.FC = () => {
       day: "numeric",
     })}</p>
   </div>
-
-  <div class="no-print" style="text-align: center; margin-top: 30px;">
-    <button onclick="window.print()" style="
-      background: #ffd700;
-      color: #0d2438;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 1rem;
-    ">
-      🖨️ Print as PDF
-    </button>
-    <p style="margin-top: 10px; color: #718096; font-size: 0.9rem;">
-      Click the button above to print as PDF, or use Ctrl+P
-    </p>
-  </div>
 </body>
-</html>
-  `;
-
-    // Create a new window with the portfolio content
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-
-      // Wait for content to load then trigger print
-      printWindow.onload = () => {
-        printWindow.focus();
-        // Auto-print after a short delay
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      };
-    } else {
-      // Fallback: alert user to allow popups
-      toast.info("Please allow popups to download your portfolio as PDF");
-
-      // Alternative: Open in current window
-      const blob = new Blob([printContent], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    }
-
-    toast.success("📄 Opening portfolio for PDF download...");
+</html>`;
   };
 
   // Add skill
@@ -594,6 +690,52 @@ const PortfolioBuilder: React.FC = () => {
               {/* Personal Information */}
               <section className="portfolio-form-section">
                 <h2>Personal Information</h2>
+
+                {/* Profile Photo Upload */}
+                <div className="profile-photo-section">
+                  <div className="profile-photo-container">
+                    {portfolio.profilePhoto ? (
+                      <div className="profile-photo-preview">
+                        <img
+                          src={portfolio.profilePhoto}
+                          alt="Profile"
+                          className="profile-photo"
+                        />
+                        <button
+                          onClick={removeProfilePhoto}
+                          className="remove-photo-btn"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="profile-photo-placeholder">
+                        <div className="placeholder-icon">👤</div>
+                        <p>No photo uploaded</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="photo-upload-actions">
+                    <input
+                      type="file"
+                      id="profile-photo"
+                      accept="image/*"
+                      onChange={handleProfilePhotoUpload}
+                      className="photo-input"
+                      disabled={isUploadingPhoto}
+                    />
+                    <label htmlFor="profile-photo" className="photo-upload-btn">
+                      {isUploadingPhoto
+                        ? "📤 Uploading..."
+                        : "📷 Upload Profile Photo"}
+                    </label>
+                    <p className="photo-upload-hint">
+                      Recommended: Square image, max 5MB
+                    </p>
+                  </div>
+                </div>
+
                 <div className="form-grid">
                   <div className="form-group">
                     <label>Full Name *</label>
@@ -721,6 +863,7 @@ const PortfolioBuilder: React.FC = () => {
                 </div>
               </section>
 
+              {/* Rest of the component remains the same... */}
               {/* Skills Section */}
               <section className="portfolio-form-section">
                 <h2>Skills & Technologies</h2>
@@ -958,9 +1101,19 @@ const PortfolioBuilder: React.FC = () => {
                 <div className="portfolio-preview">
                   <div className="preview-header">
                     <div className="preview-avatar">
-                      {portfolio.name
-                        ? portfolio.name.charAt(0).toUpperCase()
-                        : "U"}
+                      {portfolio.profilePhoto ? (
+                        <img
+                          src={portfolio.profilePhoto}
+                          alt={portfolio.name}
+                          className="profile-photo-preview"
+                        />
+                      ) : (
+                        <div className="avatar-fallback">
+                          {portfolio.name
+                            ? portfolio.name.charAt(0).toUpperCase()
+                            : "U"}
+                        </div>
+                      )}
                     </div>
                     <div className="preview-personal-info">
                       <h3>{portfolio.name || "Your Name"}</h3>
