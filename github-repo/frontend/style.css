@@ -1,0 +1,274 @@
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Helvetica', 'Arial', sans-serif;
+}
+
+body {
+  background-color: #111;
+  color: #fff;
+  line-height: 1.6;
+}
+
+/* Container */
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #FF0077;
+  color: #fff;
+  padding: 0.8rem 2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #e6006e;
+  transform: scale(1.05);
+}
+
+.btn-outline {
+  border: 2px solid #FF0077;
+  color: #FF0077;
+  padding: 0.8rem 2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.btn-outline:hover {
+  background-color: #FF0077;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* Header */
+.header {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-links a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 1.5rem;
+  font-weight: 500;
+}
+
+.nav-links a:hover {
+  color: #FF0077;
+}
+
+/* Hero Section */
+.hero {
+  position: relative;
+  background: url('https://via.placeholder.com/1600x800') center/cover no-repeat;
+  height: 90vh;
+  display: flex;
+  align-items: center;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 600px;
+}
+
+.hero-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.hero-bullets {
+  list-style: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons a {
+  margin-right: 1rem;
+}
+
+/* Brand / Trust Section */
+.brands {
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.brands-text {
+  margin-bottom: 1rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.brand-logos {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.brand-logo {
+  font-weight: bold;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.brand-logo:hover {
+  opacity: 1;
+}
+
+/* Features Section */
+.features {
+  padding: 5rem 0;
+}
+
+.features-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: center;
+}
+
+.features-left {
+  flex: 1;
+}
+
+.features-right {
+  flex: 1;
+}
+
+.feature-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.feature-card {
+  background-color: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(255, 0, 119, 0.2);
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Showcase Section */
+.showcase {
+  padding: 5rem 0;
+}
+
+.showcase-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.showcase-left {
+  flex: 1;
+}
+
+.showcase-right {
+  flex: 1;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Global Network Section */
+.global-network {
+  position: relative;
+  padding: 5rem 0;
+  text-align: center;
+  background-color: #111;
+}
+
+.global-network .network-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.1;
+  object-fit: cover;
+  z-index: -1;
+}
+
+/* Footer */
+.footer {
+  background-color: #111;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.footer-links a {
+  color: #fff;
+  margin-left: 1rem;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #FF0077;
+}
+
+/* Responsive */
+@media(max-width: 768px) {
+
+  .features-container,
+  .showcase-container {
+    flex-direction: column;
+  }
+
+  .feature-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-bullets {
+    margin-left: 1rem;
+  }
+}

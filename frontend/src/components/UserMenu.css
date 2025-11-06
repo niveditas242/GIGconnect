@@ -1,0 +1,176 @@
+﻿/* UserMenu.css - Updated with same animations as navbar links */
+
+.user-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Common button styles for all nav actions - MATCHING NAVBAR STYLE */
+.nav-portfolio-link,
+.nav-dashboard-link,
+.nav-auth-link {
+  background: none;
+  border: none;
+  color: #e6f2ff;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: all 180ms ease;
+  text-decoration: none;
+  font-family: inherit;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  position: relative;
+  white-space: nowrap;
+}
+
+/* Hover effects matching navbar links */
+.nav-portfolio-link:hover,
+.nav-dashboard-link:hover,
+.nav-auth-link:hover {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* Underline animation matching navbar */
+.nav-portfolio-link::after,
+.nav-dashboard-link::after,
+.nav-auth-link::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ffd700, #ffed4e);
+  transform: translateX(-50%);
+  transition: width 220ms ease;
+}
+
+.nav-portfolio-link:hover::after,
+.nav-dashboard-link:hover::after,
+.nav-auth-link:hover::after {
+  width: 70%;
+}
+
+/* Specific styles for portfolio link */
+.nav-portfolio-link {
+  /* No special background, just the hover effects */
+}
+
+/* Specific styles for dashboard link */
+.nav-dashboard-link {
+  /* No special background, just the hover effects */
+}
+
+/* User greeting - with similar animation */
+.user-greeting {
+  font-weight: 500;
+  color: #ffd700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  position: relative;
+  transition: all 180ms ease;
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.user-greeting::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ffd700, #ffed4e);
+  transform: translateX(-50%);
+  transition: width 220ms ease;
+}
+
+.user-greeting:hover::after {
+  width: 70%;
+}
+
+/* Auth link specific styles */
+.nav-auth-link.signup {
+  font-weight: 600;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #0d2438;
+  border: none;
+}
+
+.nav-auth-link.signup:hover {
+  background: linear-gradient(135deg, #ffed4e, #ffd700);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  color: #0d2438;
+}
+
+.nav-auth-link.signup::after {
+  background: linear-gradient(90deg, #0d2438, #1e3a5c);
+}
+
+.nav-auth-link.logout {
+  color: #e6f2ff;
+  /* No special background for logout */
+}
+
+.nav-auth-link.logout:hover {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.nav-auth-link.logout::after {
+  background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+}
+
+/* Login button specific style */
+.nav-auth-link:not(.signup):not(.logout) {
+  /* No special background, just the hover effects */
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+
+  .user-links,
+  .auth-links {
+    gap: 0.8rem;
+  }
+
+  .nav-portfolio-link,
+  .nav-dashboard-link,
+  .nav-auth-link,
+  .user-greeting {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .user-greeting {
+    display: none;
+    /* Hide greeting on mobile to save space */
+  }
+}
+
+@media (max-width: 480px) {
+
+  .user-links,
+  .auth-links {
+    gap: 0.5rem;
+  }
+
+  .nav-portfolio-link,
+  .nav-dashboard-link,
+  .nav-auth-link {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.5rem;
+  }
+}
