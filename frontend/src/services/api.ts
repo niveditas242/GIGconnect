@@ -152,6 +152,107 @@ export const api = {
       throw error;
     }
   },
+
+  // ==================== PORTFOLIO API FUNCTIONS ====================
+
+  // Save portfolio
+  async savePortfolio(portfolioData: any) {
+    console.log("💾 API: Saving portfolio");
+    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/save`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(portfolioData),
+    });
+  },
+
+  // Get my portfolio
+  async getMyPortfolio() {
+    console.log("📁 API: Getting my portfolio");
+    return await fetchWithErrorHandling(
+      `${API_BASE_URL}/portfolio/my-portfolio`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+  },
+
+  // Publish portfolio
+  async publishPortfolio() {
+    console.log("🚀 API: Publishing portfolio");
+    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/publish`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+  },
+
+  // Unpublish portfolio
+  async unpublishPortfolio() {
+    console.log("🔒 API: Unpublishing portfolio");
+    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/unpublish`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+  },
+
+  // Delete portfolio
+  async deletePortfolio() {
+    console.log("🗑️ API: Deleting portfolio");
+    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/delete`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+  },
+
+  // Search freelancers
+  async searchFreelancers(filters: any) {
+    console.log("🔍 API: Searching freelancers", filters);
+    const queryParams = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && value !== "") {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    return await fetchWithErrorHandling(
+      `${API_BASE_URL}/search/freelancers?${queryParams}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+  },
+
+  // Get search filters
+  async getSearchFilters() {
+    console.log("🎛️ API: Getting search filters");
+    return await fetchWithErrorHandling(`${API_BASE_URL}/search/filters`, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  // Get public portfolio by freelancer ID
+  async getPublicPortfolio(freelancerId: string) {
+    console.log("👁️ API: Getting public portfolio for", freelancerId);
+    return await fetchWithErrorHandling(
+      `${API_BASE_URL}/portfolio/public/${freelancerId}`,
+      {
+        headers: getAuthHeaders(),
+      }
+    );
+  },
+};
+
+// Portfolio API functions (separate export for easy access)
+export const portfolioApi = {
+  savePortfolio: (portfolioData: any) => api.savePortfolio(portfolioData),
+  getMyPortfolio: () => api.getMyPortfolio(),
+  publishPortfolio: () => api.publishPortfolio(),
+  unpublishPortfolio: () => api.unpublishPortfolio(),
+  deletePortfolio: () => api.deletePortfolio(),
+  searchFreelancers: (filters: any) => api.searchFreelancers(filters),
+  getSearchFilters: () => api.getSearchFilters(),
+  getPublicPortfolio: (freelancerId: string) =>
+    api.getPublicPortfolio(freelancerId),
 };
 
 // Auth utility functions
@@ -196,5 +297,18 @@ export const resetPassword = (
 ) => api.resetPassword(email, otp, newPassword);
 export const getCurrentUser = () => api.getCurrentUser();
 export const testConnection = () => api.testConnection();
+
+// Portfolio function exports
+export const savePortfolio = (portfolioData: any) =>
+  api.savePortfolio(portfolioData);
+export const getMyPortfolio = () => api.getMyPortfolio();
+export const publishPortfolio = () => api.publishPortfolio();
+export const unpublishPortfolio = () => api.unpublishPortfolio();
+export const deletePortfolio = () => api.deletePortfolio();
+export const searchFreelancers = (filters: any) =>
+  api.searchFreelancers(filters);
+export const getSearchFilters = () => api.getSearchFilters();
+export const getPublicPortfolio = (freelancerId: string) =>
+  api.getPublicPortfolio(freelancerId);
 
 export default api;

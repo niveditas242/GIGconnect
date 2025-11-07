@@ -1,7 +1,13 @@
+// src/components/Features.tsx
 import React from "react";
 import { motion } from "framer-motion";
 
-const features = [
+interface Feature {
+  title: string;
+  desc: string;
+}
+
+const features: Feature[] = [
   {
     title: "Local Freelancers",
     desc: "Find skilled professionals near you for faster communication and better trust.",
@@ -16,7 +22,7 @@ const features = [
   },
 ];
 
-const Features = () => {
+const Features: React.FC = () => {
   return (
     <section className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-6 text-center">

@@ -2,6 +2,12 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import {
+  savePortfolio,
+  getMyPortfolio,
+  publishPortfolio,
+  deletePortfolio,
+} from "../services/api";
 import "./PortfolioBuilder.css";
 
 interface Project {
@@ -16,6 +22,7 @@ interface Project {
 }
 
 interface PortfolioData {
+  _id?: string;
   name: string;
   title: string;
   bio: string;
@@ -33,6 +40,7 @@ interface PortfolioData {
     twitter?: string;
     website?: string;
   };
+  isPublished?: boolean;
 }
 
 const PortfolioBuilder: React.FC = () => {
@@ -63,14 +71,42 @@ const PortfolioBuilder: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
+  const [isEditingProject, setIsEditingProject] = useState<string | null>(null);
+
+  // Load portfolio data when component mounts
+  useEffect(() => {
+    loadPortfolioData();
+  }, []);
+
+  // Load existing portfolio data
+  const loadPortfolioData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getMyPortfolio();
+
+      if (response.success && response.portfolio) {
+        setPortfolio(response.portfolio);
+        setIsPublished(response.portfolio.isPublished || false);
+        setHasExistingPortfolio(true);
+        toast.info("📁 Your existing portfolio has been loaded");
+      }
+    } catch (error: any) {
+      console.log(
+        "No existing portfolio found or error loading:",
+        error.message
+      );
+      // It's okay if no portfolio exists yet
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Check if portfolio has content
   const hasContent = () => {
     return (
-      portfolio.name.trim() !== "" ||
-      portfolio.title.trim() !== "" ||
-      portfolio.bio.trim() !== "" ||
-      portfolio.skills.length > 0 ||
+      portfolio.name.trim() !== "" &&
+      portfolio.title.trim() !== "" &&
       portfolio.projects.length > 0
     );
   };
@@ -82,13 +118,11 @@ const PortfolioBuilder: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please upload an image file");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size should be less than 5MB");
       return;
@@ -96,7 +130,6 @@ const PortfolioBuilder: React.FC = () => {
 
     setIsUploadingPhoto(true);
     try {
-      // Convert image to base64 for preview
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -127,90 +160,136 @@ const PortfolioBuilder: React.FC = () => {
     toast.info("Profile photo removed");
   };
 
-  // Publish Portfolio to Backend
-  const publishPortfolio = async () => {
+  // SAVE PORTFOLIO - Create or Update
+  const handleSavePortfolio = async () => {
     if (!hasContent()) {
       toast.error(
-        "Please add some content to your portfolio before publishing."
+        "Please add name, title, and at least one project before saving."
       );
       return;
     }
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://localhost:5000/api/portfolio/publish",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            ...portfolio,
-            profilePhoto: portfolio.profilePhoto, // Include profile photo in the data
-          }),
-        }
+      const response = await savePortfolio(portfolio);
+
+      if (response.success) {
+        setHasExistingPortfolio(true);
+        toast.success(
+          hasExistingPortfolio
+            ? "💾 Portfolio updated successfully!"
+            : "💾 Portfolio saved successfully!"
+        );
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      console.error("Save portfolio error:", error);
+      toast.error(
+        error.message || "Failed to save portfolio. Please try again."
       );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      const data = await response.json();
+  // PUBLISH PORTFOLIO
+  const handlePublishPortfolio = async () => {
+    if (!hasContent()) {
+      toast.error(
+        "Please complete your portfolio (name, title, and at least one project) before publishing."
+      );
+      return;
+    }
 
-      if (data.success) {
+    // First save the portfolio, then publish
+    setIsLoading(true);
+    try {
+      // Save first to ensure all data is current
+      await savePortfolio(portfolio);
+
+      // Then publish
+      const response = await publishPortfolio();
+
+      if (response.success) {
         setIsPublished(true);
+        setHasExistingPortfolio(true);
         toast.success(
           "🎉 Portfolio published successfully! You are now visible to clients."
         );
       } else {
-        toast.error(data.message || "Failed to publish portfolio");
+        throw new Error(response.message);
       }
     } catch (error: any) {
       console.error("Publish portfolio error:", error);
-      toast.error("Failed to publish portfolio. Please try again.");
+      toast.error(
+        error.message || "Failed to publish portfolio. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Save Portfolio to Backend
-  const savePortfolio = async () => {
-    if (!hasContent()) {
-      toast.error("Please add some content to your portfolio before saving.");
+  // DELETE PORTFOLIO
+  const handleDeletePortfolio = async () => {
+    if (!hasExistingPortfolio) {
+      toast.info("No portfolio to delete");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Are you sure you want to delete your entire portfolio? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const response = await deletePortfolio();
 
-      // Save portfolio data including profile photo
-      const response = await fetch("http://localhost:5000/api/portfolio/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...portfolio,
-          profilePhoto: portfolio.profilePhoto,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save portfolio");
+      if (response.success) {
+        // Reset to initial state
+        setPortfolio({
+          name: user?.name || "",
+          title: user?.title || "",
+          bio: user?.bio || "",
+          email: user?.email || "",
+          phone: "",
+          location: "",
+          experience: "",
+          education: "",
+          skills: user?.skills || [],
+          projects: [],
+          profilePhoto: "",
+          socialLinks: {},
+        });
+        setIsPublished(false);
+        setHasExistingPortfolio(false);
+        setCurrentProject({
+          title: "",
+          description: "",
+          image: "",
+          technologies: [],
+          category: "web-development",
+        });
+        toast.success("🗑️ Portfolio deleted successfully!");
+      } else {
+        throw new Error(response.message);
       }
-
-      toast.success("💾 Portfolio saved successfully!");
     } catch (error: any) {
-      console.error("Save portfolio error:", error);
-      toast.error("Failed to save portfolio. Please try again.");
+      console.error("Delete portfolio error:", error);
+      toast.error(
+        error.message || "Failed to delete portfolio. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Download portfolio as PDF using html2canvas and jsPDF
-  const downloadPortfolio = async () => {
+  // DOWNLOAD PORTFOLIO AS PDF
+  const handleDownloadPortfolio = async () => {
     if (!hasContent()) {
       toast.error(
         "Please add some content to your portfolio before downloading."
@@ -219,11 +298,9 @@ const PortfolioBuilder: React.FC = () => {
     }
 
     try {
-      // Dynamically import the libraries
       const html2canvas = (await import("html2canvas")).default;
       const jsPDF = (await import("jspdf")).default;
 
-      // Get the preview element
       const previewElement = document.querySelector(
         ".portfolio-preview"
       ) as HTMLElement;
@@ -233,28 +310,24 @@ const PortfolioBuilder: React.FC = () => {
         return;
       }
 
-      // Create canvas from the preview
       const canvas = await html2canvas(previewElement, {
-        scale: 2, // Higher quality
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
       });
 
-      // Create PDF
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
+      const imgWidth = 210;
+      const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Add additional pages if needed
       while (heightLeft >= 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
@@ -262,350 +335,15 @@ const PortfolioBuilder: React.FC = () => {
         heightLeft -= pageHeight;
       }
 
-      // Save the PDF
       pdf.save(`portfolio-${portfolio.name || "my-portfolio"}.pdf`);
       toast.success("📄 Portfolio downloaded as PDF!");
     } catch (error) {
       console.error("PDF download error:", error);
       toast.error("Failed to download PDF. Please try again.");
-
-      // Fallback: Use print method
-      const printContent = createPrintContent();
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-      }
     }
   };
 
-  // Helper function to create print content (fallback)
-  const createPrintContent = () => {
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Portfolio - ${portfolio.name}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      line-height: 1.6;
-      color: #1a202c;
-      background: #ffffff;
-      padding: 40px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-      border-bottom: 3px solid #6366f1;
-      padding-bottom: 20px;
-    }
-    
-    .profile-header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 2rem;
-      margin-bottom: 20px;
-    }
-    
-    .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid #6366f1;
-    }
-    
-    .profile-text h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: #0d2438;
-      margin-bottom: 10px;
-    }
-    
-    .profile-text .title {
-      font-size: 1.3rem;
-      color: #6366f1;
-      font-weight: 600;
-      margin-bottom: 15px;
-    }
-    
-    .contact-info {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-top: 15px;
-      font-size: 0.9rem;
-      color: #4a5568;
-    }
-    
-    .section {
-      margin-bottom: 30px;
-      page-break-inside: avoid;
-    }
-    
-    .section h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #0d2438;
-      margin-bottom: 15px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    
-    .bio {
-      font-size: 1rem;
-      color: #4a5568;
-      text-align: justify;
-      line-height: 1.8;
-    }
-    
-    .skills-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-    }
-    
-    .skill-tag {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-    
-    .project {
-      margin-bottom: 25px;
-      padding: 20px;
-      border: 1px solid #e2e8f0;
-      border-radius: 10px;
-      background: #f7fafc;
-      page-break-inside: avoid;
-    }
-    
-    .project-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 10px;
-    }
-    
-    .project-title {
-      font-size: 1.2rem;
-      font-weight: 600;
-      color: #2d3748;
-    }
-    
-    .project-category {
-      background: #6366f1;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      text-transform: capitalize;
-    }
-    
-    .project-description {
-      color: #4a5568;
-      margin: 10px 0;
-      line-height: 1.6;
-    }
-    
-    .project-links {
-      display: flex;
-      gap: 15px;
-      margin-top: 10px;
-    }
-    
-    .project-link {
-      color: #6366f1;
-      text-decoration: none;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-    
-    .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-top: 10px;
-    }
-    
-    .info-item {
-      margin-bottom: 10px;
-    }
-    
-    .info-label {
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 5px;
-    }
-    
-    .info-value {
-      color: #4a5568;
-    }
-    
-    .footer {
-      text-align: center;
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #e2e8f0;
-      color: #718096;
-      font-size: 0.9rem;
-    }
-    
-    @media print {
-      body {
-        padding: 20px;
-      }
-      .no-print {
-        display: none !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="profile-header">
-      ${
-        portfolio.profilePhoto
-          ? `<img src="${portfolio.profilePhoto}" class="profile-avatar" alt="${portfolio.name}">`
-          : ""
-      }
-      <div class="profile-text">
-        <h1>${portfolio.name || "Professional Portfolio"}</h1>
-        <div class="title">${portfolio.title || "Professional"}</div>
-      </div>
-    </div>
-    <div class="contact-info">
-      ${portfolio.email ? `<div>📧 ${portfolio.email}</div>` : ""}
-      ${portfolio.phone ? `<div>📞 ${portfolio.phone}</div>` : ""}
-      ${portfolio.location ? `<div>📍 ${portfolio.location}</div>` : ""}
-    </div>
-  </div>
-
-  ${
-    portfolio.bio
-      ? `
-  <div class="section">
-    <h2>Professional Summary</h2>
-    <div class="bio">${portfolio.bio}</div>
-  </div>
-  `
-      : ""
-  }
-
-  <div class="info-grid">
-    ${
-      portfolio.experience
-        ? `
-    <div class="info-item">
-      <div class="info-label">Experience</div>
-      <div class="info-value">${portfolio.experience} years</div>
-    </div>
-    `
-        : ""
-    }
-    
-    ${
-      portfolio.education
-        ? `
-    <div class="info-item">
-      <div class="info-label">Education</div>
-      <div class="info-value">${portfolio.education}</div>
-    </div>
-    `
-        : ""
-    }
-  </div>
-
-  ${
-    portfolio.skills.length > 0
-      ? `
-  <div class="section">
-    <h2>Skills & Technologies</h2>
-    <div class="skills-container">
-      ${portfolio.skills
-        .map((skill) => `<span class="skill-tag">${skill}</span>`)
-        .join("")}
-    </div>
-  </div>
-  `
-      : ""
-  }
-
-  ${
-    portfolio.projects.length > 0
-      ? `
-  <div class="section">
-    <h2>Projects (${portfolio.projects.length})</h2>
-    ${portfolio.projects
-      .map(
-        (project) => `
-      <div class="project">
-        <div class="project-header">
-          <div class="project-title">${project.title}</div>
-          <span class="project-category">${project.category}</span>
-        </div>
-        <div class="project-description">${project.description}</div>
-        ${
-          project.liveUrl || project.githubUrl
-            ? `
-        <div class="project-links">
-          ${
-            project.liveUrl
-              ? `<a href="${project.liveUrl}" class="project-link">Live Demo</a>`
-              : ""
-          }
-          ${
-            project.githubUrl
-              ? `<a href="${project.githubUrl}" class="project-link">GitHub</a>`
-              : ""
-          }
-        </div>
-        `
-            : ""
-        }
-      </div>
-    `
-      )
-      .join("")}
-  </div>
-  `
-      : ""
-  }
-
-  <div class="footer">
-    <p>Generated by GIGconnect • ${new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })}</p>
-  </div>
-</body>
-</html>`;
-  };
-
-  // Add skill
+  // SKILL OPERATIONS
   const addSkill = () => {
     if (
       currentSkill.trim() &&
@@ -619,7 +357,6 @@ const PortfolioBuilder: React.FC = () => {
     }
   };
 
-  // Remove skill
   const removeSkill = (skill: string) => {
     setPortfolio((prev) => ({
       ...prev,
@@ -627,11 +364,11 @@ const PortfolioBuilder: React.FC = () => {
     }));
   };
 
-  // Add project
+  // PROJECT OPERATIONS
   const addProject = () => {
     if (currentProject.title && currentProject.description) {
       const newProject: Project = {
-        id: Date.now().toString(),
+        id: isEditingProject || Date.now().toString(),
         title: currentProject.title || "",
         description: currentProject.description || "",
         image: currentProject.image || "",
@@ -641,11 +378,25 @@ const PortfolioBuilder: React.FC = () => {
         githubUrl: currentProject.githubUrl,
       };
 
-      setPortfolio((prev) => ({
-        ...prev,
-        projects: [...prev.projects, newProject],
-      }));
+      if (isEditingProject) {
+        // Update existing project
+        setPortfolio((prev) => ({
+          ...prev,
+          projects: prev.projects.map((project) =>
+            project.id === isEditingProject ? newProject : project
+          ),
+        }));
+        toast.success("✅ Project updated successfully!");
+      } else {
+        // Add new project
+        setPortfolio((prev) => ({
+          ...prev,
+          projects: [...prev.projects, newProject],
+        }));
+        toast.success("✅ Project added successfully!");
+      }
 
+      // Reset form
       setCurrentProject({
         title: "",
         description: "",
@@ -653,20 +404,74 @@ const PortfolioBuilder: React.FC = () => {
         technologies: [],
         category: "web-development",
       });
-
-      toast.success("✅ Project added successfully!");
+      setIsEditingProject(null);
     } else {
       toast.error("Please fill in project title and description");
     }
   };
 
-  // Remove project
+  const editProject = (project: Project) => {
+    setCurrentProject(project);
+    setIsEditingProject(project.id);
+    // Scroll to project form
+    document
+      .getElementById("project-form")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const removeProject = (id: string) => {
     setPortfolio((prev) => ({
       ...prev,
       projects: prev.projects.filter((project) => project.id !== id),
     }));
     toast.info("🗑️ Project removed");
+
+    // If editing this project, clear the form
+    if (isEditingProject === id) {
+      setCurrentProject({
+        title: "",
+        description: "",
+        image: "",
+        technologies: [],
+        category: "web-development",
+      });
+      setIsEditingProject(null);
+    }
+  };
+
+  // RESET PORTFOLIO (Keep basic user info)
+  const handleResetForm = () => {
+    if (
+      !window.confirm(
+        "Are you sure you want to reset all form data? This will clear all your current changes."
+      )
+    ) {
+      return;
+    }
+
+    setPortfolio({
+      name: user?.name || "",
+      title: user?.title || "",
+      bio: "",
+      email: user?.email || "",
+      phone: "",
+      location: "",
+      experience: "",
+      education: "",
+      skills: [],
+      projects: [],
+      profilePhoto: "",
+      socialLinks: {},
+    });
+    setCurrentProject({
+      title: "",
+      description: "",
+      image: "",
+      technologies: [],
+      category: "web-development",
+    });
+    setIsEditingProject(null);
+    toast.info("🔄 Form reset successfully");
   };
 
   return (
@@ -676,8 +481,21 @@ const PortfolioBuilder: React.FC = () => {
           <div className="hero-content">
             <h1>Build Your Professional Portfolio</h1>
             <p>
-              Showcase your skills and projects to attract clients worldwide
+              {hasExistingPortfolio
+                ? "Edit and manage your existing portfolio"
+                : "Showcase your skills and projects to attract clients worldwide"}
             </p>
+            {hasExistingPortfolio && (
+              <div className="portfolio-status">
+                <span
+                  className={`status-badge ${
+                    isPublished ? "published" : "draft"
+                  }`}
+                >
+                  {isPublished ? "📢 Published" : "📝 Draft"}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -687,7 +505,36 @@ const PortfolioBuilder: React.FC = () => {
           <div className="portfolio-layout">
             {/* Form Section */}
             <div className="form-section">
-              {/* Personal Information */}
+              {/* Portfolio Management Header */}
+              <div className="portfolio-management-header">
+                <h2>
+                  {hasExistingPortfolio
+                    ? "Edit Portfolio"
+                    : "Create New Portfolio"}
+                </h2>
+                <div className="portfolio-actions-top">
+                  {hasExistingPortfolio && (
+                    <button
+                      onClick={handleResetForm}
+                      className="reset-form-btn"
+                      disabled={isLoading}
+                    >
+                      🔄 Reset Form
+                    </button>
+                  )}
+                  {hasExistingPortfolio && (
+                    <button
+                      onClick={handleDeletePortfolio}
+                      className="delete-portfolio-btn"
+                      disabled={isLoading}
+                    >
+                      🗑️ Delete Portfolio
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Personal Information Section */}
               <section className="portfolio-form-section">
                 <h2>Personal Information</h2>
 
@@ -863,7 +710,6 @@ const PortfolioBuilder: React.FC = () => {
                 </div>
               </section>
 
-              {/* Rest of the component remains the same... */}
               {/* Skills Section */}
               <section className="portfolio-form-section">
                 <h2>Skills & Technologies</h2>
@@ -903,8 +749,8 @@ const PortfolioBuilder: React.FC = () => {
               </section>
 
               {/* Projects Section */}
-              <section className="portfolio-form-section">
-                <h2>Add Projects</h2>
+              <section className="portfolio-form-section" id="project-form">
+                <h2>{isEditingProject ? "Edit Project" : "Add Projects"}</h2>
 
                 <div className="project-input-form">
                   <div className="form-grid">
@@ -989,9 +835,31 @@ const PortfolioBuilder: React.FC = () => {
                   </div>
 
                   <button onClick={addProject} className="project-add-btn">
-                    <span className="btn-icon">+</span>
-                    Add Project to Portfolio
+                    <span className="btn-icon">
+                      {isEditingProject ? "✏️" : "+"}
+                    </span>
+                    {isEditingProject
+                      ? "Update Project"
+                      : "Add Project to Portfolio"}
                   </button>
+
+                  {isEditingProject && (
+                    <button
+                      onClick={() => {
+                        setCurrentProject({
+                          title: "",
+                          description: "",
+                          image: "",
+                          technologies: [],
+                          category: "web-development",
+                        });
+                        setIsEditingProject(null);
+                      }}
+                      className="cancel-edit-btn"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
                 </div>
 
                 {/* Projects List */}
@@ -1003,12 +871,7 @@ const PortfolioBuilder: React.FC = () => {
                         <h4>{project.title}</h4>
                         <div className="project-actions">
                           <button
-                            onClick={() => {
-                              // Set current project for editing
-                              setCurrentProject(project);
-                              // Remove from list since we're editing
-                              removeProject(project.id);
-                            }}
+                            onClick={() => editProject(project)}
                             className="project-edit-btn"
                           >
                             ✏️ Edit
@@ -1062,16 +925,20 @@ const PortfolioBuilder: React.FC = () => {
               {/* Action Buttons */}
               <div className="portfolio-actions">
                 <button
-                  onClick={savePortfolio}
+                  onClick={handleSavePortfolio}
                   className="save-portfolio-btn"
                   disabled={!hasContent() || isLoading}
                 >
                   <span className="btn-icon">💾</span>
-                  {isLoading ? "Saving..." : "Save Portfolio"}
+                  {isLoading
+                    ? "Saving..."
+                    : hasExistingPortfolio
+                    ? "Update Portfolio"
+                    : "Save Portfolio"}
                 </button>
 
                 <button
-                  onClick={downloadPortfolio}
+                  onClick={handleDownloadPortfolio}
                   className="download-portfolio-btn"
                   disabled={!hasContent()}
                 >
@@ -1080,7 +947,7 @@ const PortfolioBuilder: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={publishPortfolio}
+                  onClick={handlePublishPortfolio}
                   className="publish-portfolio-btn"
                   disabled={!hasContent() || isLoading || isPublished}
                 >

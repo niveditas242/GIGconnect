@@ -1,46 +1,150 @@
+// backend/controllers/portfolioController.js
+const Portfolio = require("../models/Portfolio");
 const Freelancer = require("../models/Freelancer");
+
+// Save portfolio (create or update)
+const savePortfolio = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const portfolioData = req.body;
+
+    // Find or create portfolio
+    let portfolio = await Portfolio.findOne({ freelancerId: userId });
+
+    if (portfolio) {
+      // Update existing portfolio
+      portfolio = await Portfolio.findOneAndUpdate(
+        { freelancerId: userId },
+        {
+          ...portfolioData,
+          lastSavedAt: new Date(),
+        },
+        { new: true, runValidators: true }
+      );
+    } else {
+      // Create new portfolio
+      portfolio = new Portfolio({
+        freelancerId: userId,
+        ...portfolioData,
+        lastSavedAt: new Date(),
+      });
+      await portfolio.save();
+    }
+
+    // Also update freelancer profile with basic info
+    await Freelancer.findOneAndUpdate(
+      { userId: userId },
+      {
+        name: portfolioData.name,
+        title: portfolioData.title,
+        skills: portfolioData.skills,
+        location: portfolioData.location,
+        profileCompleted: true,
+      }
+    );
+
+    res.json({
+      success: true,
+      message: "Portfolio saved successfully!",
+      portfolio: portfolio,
+    });
+  } catch (error) {
+    console.error("Save portfolio error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error saving portfolio",
+      error: error.message,
+    });
+  }
+};
+
+// Get portfolio for editing
+const getMyPortfolio = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    const portfolio = await Portfolio.findOne({ freelancerId: userId });
+
+    if (!portfolio) {
+      return res.json({
+        success: true,
+        portfolio: null,
+        message: "No portfolio found. Create your first portfolio!",
+      });
+    }
+
+    res.json({
+      success: true,
+      portfolio: portfolio,
+    });
+  } catch (error) {
+    console.error("Get portfolio error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching portfolio",
+    });
+  }
+};
 
 // Publish portfolio to make freelancer searchable
 const publishPortfolio = async (req, res) => {
   try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
+    const userId = req.userId;
 
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
+    const portfolio = await Portfolio.findOne({ freelancerId: userId });
 
-    if (!freelancer) {
+    if (!portfolio) {
       return res.status(404).json({
         success: false,
-        message: "Freelancer profile not found",
+        message: "Portfolio not found. Please save your portfolio first.",
       });
     }
 
-    if (!freelancer.portfolio || freelancer.portfolio.length === 0) {
+    // Check if portfolio has minimum content
+    if (
+      !portfolio.name ||
+      !portfolio.title ||
+      portfolio.projects.length === 0
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Add at least one project to your portfolio before publishing",
+        message:
+          "Please complete your portfolio (name, title, and at least one project) before publishing.",
       });
     }
 
-    freelancer.isProfilePublic = true;
-    freelancer.portfolioPublished = true;
-    freelancer.lastPublishedAt = new Date();
+    // Update portfolio status
+    portfolio.isPublished = true;
+    portfolio.isPublic = true;
+    portfolio.lastPublishedAt = new Date();
 
-    freelancer.portfolio.forEach((item) => {
-      item.isPublic = true;
+    // Make all projects public
+    portfolio.projects.forEach((project) => {
+      project.isPublic = true;
     });
 
-    await freelancer.save();
+    await portfolio.save();
+
+    // Update freelancer profile to be public
+    await Freelancer.findOneAndUpdate(
+      { userId: userId },
+      {
+        isProfilePublic: true,
+        portfolioPublished: true,
+        lastPublishedAt: new Date(),
+      }
+    );
 
     res.json({
       success: true,
       message:
-        "Portfolio published successfully! You are now visible in search results.",
-      freelancer: {
-        id: freelancer._id,
-        name: freelancer.name,
-        title: freelancer.title,
-        isProfilePublic: freelancer.isProfilePublic,
-        portfolioPublished: freelancer.portfolioPublished,
+        "🎉 Portfolio published successfully! You are now visible to clients.",
+      portfolio: {
+        id: portfolio._id,
+        name: portfolio.name,
+        title: portfolio.title,
+        isPublished: portfolio.isPublished,
+        lastPublishedAt: portfolio.lastPublishedAt,
       },
     });
   } catch (error) {
@@ -55,30 +159,33 @@ const publishPortfolio = async (req, res) => {
 // Unpublish portfolio
 const unpublishPortfolio = async (req, res) => {
   try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
+    const userId = req.userId;
 
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
+    const portfolio = await Portfolio.findOne({ freelancerId: userId });
 
-    if (!freelancer) {
+    if (!portfolio) {
       return res.status(404).json({
         success: false,
-        message: "Freelancer profile not found",
+        message: "Portfolio not found",
       });
     }
 
-    freelancer.isProfilePublic = false;
-    freelancer.portfolioPublished = false;
+    portfolio.isPublished = false;
+    portfolio.isPublic = false;
+    await portfolio.save();
 
-    await freelancer.save();
+    // Update freelancer profile
+    await Freelancer.findOneAndUpdate(
+      { userId: userId },
+      {
+        isProfilePublic: false,
+        portfolioPublished: false,
+      }
+    );
 
     res.json({
       success: true,
       message: "Portfolio unpublished successfully",
-      freelancer: {
-        id: freelancer._id,
-        name: freelancer.name,
-        isProfilePublic: freelancer.isProfilePublic,
-      },
     });
   } catch (error) {
     console.error("Unpublish portfolio error:", error);
@@ -89,177 +196,40 @@ const unpublishPortfolio = async (req, res) => {
   }
 };
 
-// Add project to portfolio
-const addPortfolioProject = async (req, res) => {
+// Delete portfolio
+const deletePortfolio = async (req, res) => {
   try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
-    const {
-      title,
-      description,
-      image,
-      technologies,
-      category,
-      liveUrl,
-      githubUrl,
-    } = req.body;
+    const userId = req.userId;
 
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
+    const portfolio = await Portfolio.findOneAndDelete({
+      freelancerId: userId,
+    });
 
-    if (!freelancer) {
+    if (!portfolio) {
       return res.status(404).json({
         success: false,
-        message: "Freelancer profile not found",
+        message: "Portfolio not found",
       });
     }
 
-    const newProject = {
-      title,
-      description,
-      image: image || "",
-      technologies: technologies || [],
-      category: category || "web-development",
-      liveUrl: liveUrl || "",
-      githubUrl: githubUrl || "",
-      isPublic: false,
-    };
-
-    freelancer.portfolio.push(newProject);
-    await freelancer.save();
+    // Update freelancer profile
+    await Freelancer.findOneAndUpdate(
+      { userId: userId },
+      {
+        portfolioPublished: false,
+        isProfilePublic: false,
+      }
+    );
 
     res.json({
       success: true,
-      message: "Project added to portfolio successfully",
-      project: newProject,
+      message: "Portfolio deleted successfully",
     });
   } catch (error) {
-    console.error("Add portfolio project error:", error);
+    console.error("Delete portfolio error:", error);
     res.status(500).json({
       success: false,
-      message: "Error adding project to portfolio",
-    });
-  }
-};
-
-// Update portfolio project
-const updatePortfolioProject = async (req, res) => {
-  try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
-    const { projectId } = req.params;
-    const {
-      title,
-      description,
-      image,
-      technologies,
-      category,
-      liveUrl,
-      githubUrl,
-    } = req.body;
-
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
-
-    if (!freelancer) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer profile not found",
-      });
-    }
-
-    const project = freelancer.portfolio.id(projectId);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
-    project.title = title || project.title;
-    project.description = description || project.description;
-    project.image = image || project.image;
-    project.technologies = technologies || project.technologies;
-    project.category = category || project.category;
-    project.liveUrl = liveUrl || project.liveUrl;
-    project.githubUrl = githubUrl || project.githubUrl;
-
-    await freelancer.save();
-
-    res.json({
-      success: true,
-      message: "Project updated successfully",
-      project,
-    });
-  } catch (error) {
-    console.error("Update portfolio project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error updating project",
-    });
-  }
-};
-
-// Delete portfolio project
-const deletePortfolioProject = async (req, res) => {
-  try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
-    const { projectId } = req.params;
-
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
-
-    if (!freelancer) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer profile not found",
-      });
-    }
-
-    const project = freelancer.portfolio.id(projectId);
-    if (!project) {
-      return res.status(404).json({
-        success: false,
-        message: "Project not found",
-      });
-    }
-
-    freelancer.portfolio.pull(projectId);
-    await freelancer.save();
-
-    res.json({
-      success: true,
-      message: "Project deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete portfolio project error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error deleting project",
-    });
-  }
-};
-
-// Get freelancer's own portfolio
-const getMyPortfolio = async (req, res) => {
-  try {
-    const freelancerId = req.userId; // Changed from req.user.id to req.userId
-
-    const freelancer = await Freelancer.findOne({ userId: freelancerId });
-
-    if (!freelancer) {
-      return res.status(404).json({
-        success: false,
-        message: "Freelancer profile not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      portfolio: freelancer.portfolio,
-      isProfilePublic: freelancer.isProfilePublic,
-      portfolioPublished: freelancer.portfolioPublished,
-    });
-  } catch (error) {
-    console.error("Get portfolio error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching portfolio",
+      message: "Error deleting portfolio",
     });
   }
 };
@@ -269,34 +239,22 @@ const getPublicPortfolio = async (req, res) => {
   try {
     const { freelancerId } = req.params;
 
-    const freelancer = await Freelancer.findOne({
-      _id: freelancerId,
-      isProfilePublic: true,
-      portfolioPublished: true,
-    });
+    const portfolio = await Portfolio.findOne({
+      freelancerId: freelancerId,
+      isPublished: true,
+      isPublic: true,
+    }).populate("freelancerId", "name title skills location hourlyRate rating");
 
-    if (!freelancer) {
+    if (!portfolio) {
       return res.status(404).json({
         success: false,
         message: "Portfolio not found or not published",
       });
     }
 
-    const publicPortfolio = freelancer.portfolio.filter(
-      (item) => item.isPublic
-    );
-
     res.json({
       success: true,
-      freelancer: {
-        name: freelancer.name,
-        title: freelancer.title,
-        skills: freelancer.skills,
-        location: freelancer.location,
-        hourlyRate: freelancer.hourlyRate,
-        rating: freelancer.rating,
-      },
-      portfolio: publicPortfolio,
+      portfolio: portfolio,
     });
   } catch (error) {
     console.error("Get public portfolio error:", error);
@@ -308,11 +266,10 @@ const getPublicPortfolio = async (req, res) => {
 };
 
 module.exports = {
+  savePortfolio,
+  getMyPortfolio,
   publishPortfolio,
   unpublishPortfolio,
-  addPortfolioProject,
-  updatePortfolioProject,
-  deletePortfolioProject,
-  getMyPortfolio,
+  deletePortfolio,
   getPublicPortfolio,
 };
