@@ -53,9 +53,10 @@ const projectSchema = new mongoose.Schema(
 
 const portfolioSchema = new mongoose.Schema(
   {
-    freelancerId: {
+    // CHANGE: Use userId instead of freelancerId to match your index
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Freelancer",
+      ref: "User",
       required: true,
     },
     name: {
@@ -130,7 +131,11 @@ const portfolioSchema = new mongoose.Schema(
   }
 );
 
-// Index for search functionality
+// Update indexes to use userId
+portfolioSchema.index({ userId: 1 }, { unique: true }); // This should match your existing index
+portfolioSchema.index({ isPublished: 1, isPublic: 1 });
+
+// Text search index
 portfolioSchema.index({
   name: "text",
   title: "text",
@@ -140,8 +145,5 @@ portfolioSchema.index({
   "projects.description": "text",
   "projects.technologies": "text",
 });
-
-portfolioSchema.index({ isPublished: 1, isPublic: 1 });
-portfolioSchema.index({ freelancerId: 1 });
 
 module.exports = mongoose.model("Portfolio", portfolioSchema);

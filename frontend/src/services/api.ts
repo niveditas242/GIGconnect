@@ -1,314 +1,408 @@
-// frontend/src/services/api.ts
-const API_BASE_URL = "http://localhost:5000/api";
+// src/services/api.ts
+import { toast } from "react-toastify";
 
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-  };
+// Helper function to get token
+const getToken = (): string | null => {
+  return localStorage.getItem("token");
 };
 
-// Enhanced fetch with error handling
-const fetchWithErrorHandling = async (url: string, options: RequestInit) => {
+// Enhanced fetch with error handling - FIXED HeadersInit type
+export const fetchWithErrorHandling = async (
+  url: string,
+  options: RequestInit = {}
+) => {
   try {
-    const response = await fetch(url, options);
+    const token = getToken();
+
+    // FIX: Use Record<string, string> instead of HeadersInit to avoid TypeScript errors
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add authorization header if token exists
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    // Merge with existing headers
+    const existingHeaders = (options.headers as Record<string, string>) || {};
+    const finalHeaders = {
+      ...headers,
+      ...existingHeaders,
+    };
+
+    console.log("🔐 Making request to:", url, "with token:", !!token);
+
+    const response = await fetch(url, {
+      ...options,
+      headers: finalHeaders,
+    });
 
     if (!response.ok) {
-      // Try to parse error message from response
+      const errorText = await response.text();
       let errorMessage = `HTTP error! status: ${response.status}`;
+
       try {
-        const errorData = await response.json();
+        const errorData = JSON.parse(errorText);
         errorMessage = errorData.message || errorMessage;
-      } catch {
-        // If response is not JSON, use status text
-        errorMessage = response.statusText || errorMessage;
+      } catch (e) {
+        errorMessage = errorText || response.statusText || errorMessage;
       }
+
       throw new Error(errorMessage);
     }
 
     return await response.json();
-  } catch (error: any) {
-    console.error(`API call failed for ${url}:`, error);
+  } catch (error) {
+    console.error("API call failed for", url, error);
     throw error;
   }
 };
 
-// API calls
-export const api = {
-  // Send OTP
-  async sendOTP(email: string) {
-    console.log("📧 API: Sending OTP to", email);
-    return await fetchWithErrorHandling(`${API_BASE_URL}/auth/send-otp`, {
+// ========== AUTH UTILITY FUNCTIONS ==========
+export const isAuthenticated = (): boolean => {
+  const token = localStorage.getItem("token");
+  return !!token;
+};
+
+export const getCurrentUserFromStorage = (): any => {
+  try {
+    const userData = localStorage.getItem("user");
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error("Error parsing user data from storage:", error);
+    return null;
+  }
+};
+
+export const logout = (): void => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  console.log("🚪 User logged out");
+};
+
+// ========== AUTH API FUNCTIONS ==========
+export const login = async (email: string, password: string) => {
+  console.log("🔐 API: Logging in user");
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, purpose: "registration" }),
-    });
-  },
-
-  // Verify OTP
-  async verifyOTP(email: string, otp: string) {
-    console.log("🔐 API: Verifying OTP for", email);
-    return await fetchWithErrorHandling(`${API_BASE_URL}/auth/verify-otp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp }),
-    });
-  },
-
-  // Register user
-  async register(userData: any) {
-    console.log("👤 API: Registering user", userData.email);
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.message || `Registration failed: ${response.status}`
-      );
-    }
-
-    if (data.success && data.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      console.log("✅ API: Registration successful, token saved");
-    }
-
-    return data;
-  },
-
-  // Login user
-  async login(email: string, password: string) {
-    console.log("🔑 API: Logging in user", email);
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ email, password }),
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.message || `Login failed: ${response.status}`);
-    }
-
-    if (data.success && data.token) {
+    if (data.success) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      console.log("✅ API: Login successful, token saved");
+      return {
+        success: true,
+        message: data.message || "Login successful",
+        user: data.user,
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || "Login failed",
+      };
     }
+  } catch (error: any) {
+    console.error("Login API error:", error);
+    return {
+      success: false,
+      message: error.message || "Login failed",
+    };
+  }
+};
 
+export const register = async (userData: any) => {
+  console.log("👤 API: Registering user");
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      return {
+        success: true,
+        message: data.message || "Registration successful",
+        user: data.user,
+      };
+    } else {
+      return {
+        success: false,
+        message: data.message || "Registration failed",
+      };
+    }
+  } catch (error: any) {
+    console.error("Registration API error:", error);
+    return {
+      success: false,
+      message: error.message || "Registration failed",
+    };
+  }
+};
+
+export const sendOTP = async (email: string) => {
+  console.log("📧 API: Sending OTP");
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/send-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
     return data;
-  },
+  } catch (error: any) {
+    console.error("Send OTP API error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to send OTP",
+    };
+  }
+};
 
-  // Forgot password
-  async forgotPassword(email: string) {
-    console.log("🔓 API: Forgot password for", email);
-    return await fetchWithErrorHandling(
-      `${API_BASE_URL}/auth/forgot-password`,
+export const verifyOTP = async (email: string, otp: string) => {
+  console.log("✅ API: Verifying OTP");
+  try {
+    const response = await fetch("http://localhost:5000/api/auth/verify-otp", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, otp }),
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("Verify OTP API error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to verify OTP",
+    };
+  }
+};
+
+export const forgotPassword = async (email: string) => {
+  console.log("🔑 API: Forgot password");
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/auth/forgot-password",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email }),
       }
     );
-  },
 
-  // Reset password
-  async resetPassword(email: string, otp: string, newPassword: string) {
-    console.log("🔄 API: Resetting password for", email);
-    return await fetchWithErrorHandling(`${API_BASE_URL}/auth/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp, newPassword }),
-    });
-  },
-
-  // Get current user
-  async getCurrentUser() {
-    console.log("👤 API: Getting current user");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/auth/me`, {
-      headers: getAuthHeaders(),
-    });
-  },
-
-  // Test backend connection
-  async testConnection() {
-    console.log("🔗 API: Testing backend connection");
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth`);
-      if (!response.ok) {
-        throw new Error(`Backend not responding: ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error("❌ API: Backend connection test failed");
-      throw error;
-    }
-  },
-
-  // ==================== PORTFOLIO API FUNCTIONS ====================
-
-  // Save portfolio
-  async savePortfolio(portfolioData: any) {
-    console.log("💾 API: Saving portfolio");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/save`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(portfolioData),
-    });
-  },
-
-  // Get my portfolio
-  async getMyPortfolio() {
-    console.log("📁 API: Getting my portfolio");
-    return await fetchWithErrorHandling(
-      `${API_BASE_URL}/portfolio/my-portfolio`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-  },
-
-  // Publish portfolio
-  async publishPortfolio() {
-    console.log("🚀 API: Publishing portfolio");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/publish`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
-  },
-
-  // Unpublish portfolio
-  async unpublishPortfolio() {
-    console.log("🔒 API: Unpublishing portfolio");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/unpublish`, {
-      method: "POST",
-      headers: getAuthHeaders(),
-    });
-  },
-
-  // Delete portfolio
-  async deletePortfolio() {
-    console.log("🗑️ API: Deleting portfolio");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/portfolio/delete`, {
-      method: "DELETE",
-      headers: getAuthHeaders(),
-    });
-  },
-
-  // Search freelancers
-  async searchFreelancers(filters: any) {
-    console.log("🔍 API: Searching freelancers", filters);
-    const queryParams = new URLSearchParams();
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value && value !== "") {
-        queryParams.append(key, value.toString());
-      }
-    });
-
-    return await fetchWithErrorHandling(
-      `${API_BASE_URL}/search/freelancers?${queryParams}`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-  },
-
-  // Get search filters
-  async getSearchFilters() {
-    console.log("🎛️ API: Getting search filters");
-    return await fetchWithErrorHandling(`${API_BASE_URL}/search/filters`, {
-      headers: getAuthHeaders(),
-    });
-  },
-
-  // Get public portfolio by freelancer ID
-  async getPublicPortfolio(freelancerId: string) {
-    console.log("👁️ API: Getting public portfolio for", freelancerId);
-    return await fetchWithErrorHandling(
-      `${API_BASE_URL}/portfolio/public/${freelancerId}`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
-  },
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("Forgot password API error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to process forgot password",
+    };
+  }
 };
 
-// Portfolio API functions (separate export for easy access)
-export const portfolioApi = {
-  savePortfolio: (portfolioData: any) => api.savePortfolio(portfolioData),
-  getMyPortfolio: () => api.getMyPortfolio(),
-  publishPortfolio: () => api.publishPortfolio(),
-  unpublishPortfolio: () => api.unpublishPortfolio(),
-  deletePortfolio: () => api.deletePortfolio(),
-  searchFreelancers: (filters: any) => api.searchFreelancers(filters),
-  getSearchFilters: () => api.getSearchFilters(),
-  getPublicPortfolio: (freelancerId: string) =>
-    api.getPublicPortfolio(freelancerId),
-};
-
-// Auth utility functions
-export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem("token");
-  const hasToken = !!token;
-  console.log(
-    "🔐 Auth: Checking authentication -",
-    hasToken ? "Authenticated" : "Not authenticated"
-  );
-  return hasToken;
-};
-
-export const getCurrentUserFromStorage = () => {
-  const userStr = localStorage.getItem("user");
-  const user = userStr ? JSON.parse(userStr) : null;
-  console.log(
-    "👤 Auth: Getting user from storage -",
-    user ? "User found" : "No user"
-  );
-  return user;
-};
-
-export const logout = () => {
-  console.log("🚪 Auth: Logging out");
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-};
-
-// Export all functions for backward compatibility
-export const sendOTP = (email: string) => api.sendOTP(email);
-export const verifyOTP = (email: string, otp: string) =>
-  api.verifyOTP(email, otp);
-export const register = (userData: any) => api.register(userData);
-export const login = (email: string, password: string) =>
-  api.login(email, password);
-export const forgotPassword = (email: string) => api.forgotPassword(email);
-export const resetPassword = (
+export const resetPassword = async (
   email: string,
   otp: string,
   newPassword: string
-) => api.resetPassword(email, otp, newPassword);
-export const getCurrentUser = () => api.getCurrentUser();
-export const testConnection = () => api.testConnection();
+) => {
+  console.log("🔄 API: Resetting password");
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/auth/reset-password",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp, newPassword }),
+      }
+    );
 
-// Portfolio function exports
-export const savePortfolio = (portfolioData: any) =>
-  api.savePortfolio(portfolioData);
-export const getMyPortfolio = () => api.getMyPortfolio();
-export const publishPortfolio = () => api.publishPortfolio();
-export const unpublishPortfolio = () => api.unpublishPortfolio();
-export const deletePortfolio = () => api.deletePortfolio();
-export const searchFreelancers = (filters: any) =>
-  api.searchFreelancers(filters);
-export const getSearchFilters = () => api.getSearchFilters();
-export const getPublicPortfolio = (freelancerId: string) =>
-  api.getPublicPortfolio(freelancerId);
+    const data = await response.json();
+    return data;
+  } catch (error: any) {
+    console.error("Reset password API error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to reset password",
+    };
+  }
+};
 
-export default api;
+export const getCurrentUser = async () => {
+  console.log("👤 API: Getting current user");
+  try {
+    const token = getToken();
+    if (!token) {
+      return {
+        success: false,
+        message: "No token found",
+      };
+    }
+
+    const response = await fetch("http://localhost:5000/api/auth/me", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
+
+    return data;
+  } catch (error: any) {
+    console.error("Get current user API error:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to get current user",
+    };
+  }
+};
+
+// ========== PORTFOLIO API FUNCTIONS ==========
+export const savePortfolio = async (portfolioData: any) => {
+  console.log("💾 API: Saving portfolio");
+  return await fetchWithErrorHandling(
+    "http://localhost:5000/api/portfolio/save",
+    {
+      method: "POST",
+      body: JSON.stringify(portfolioData),
+    }
+  );
+};
+
+export const getMyPortfolio = async () => {
+  console.log("📁 API: Getting my portfolio");
+  return await fetchWithErrorHandling(
+    "http://localhost:5000/api/portfolio/my-portfolio"
+  );
+};
+
+export const publishPortfolio = async () => {
+  console.log("🚀 API: Publishing portfolio");
+  return await fetchWithErrorHandling(
+    "http://localhost:5000/api/portfolio/publish",
+    {
+      method: "POST",
+    }
+  );
+};
+
+export const deletePortfolio = async () => {
+  console.log("🗑️ API: Deleting portfolio");
+  return await fetchWithErrorHandling(
+    "http://localhost:5000/api/portfolio/delete",
+    {
+      method: "DELETE",
+    }
+  );
+};
+
+// ========== SEARCH API FUNCTIONS ==========
+export const searchFreelancers = async (searchParams: {
+  query?: string;
+  skills?: string[];
+  location?: string;
+  minExperience?: number;
+  maxExperience?: number;
+  category?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  try {
+    console.log("🔍 API: Searching freelancers", searchParams);
+
+    const queryParams = new URLSearchParams();
+
+    if (searchParams.query) queryParams.append("query", searchParams.query);
+    if (searchParams.location)
+      queryParams.append("location", searchParams.location);
+    if (searchParams.category)
+      queryParams.append("category", searchParams.category);
+    if (searchParams.minExperience !== undefined)
+      queryParams.append(
+        "minExperience",
+        searchParams.minExperience.toString()
+      );
+    if (searchParams.maxExperience !== undefined)
+      queryParams.append(
+        "maxExperience",
+        searchParams.maxExperience.toString()
+      );
+    if (searchParams.page)
+      queryParams.append("page", searchParams.page.toString());
+    if (searchParams.limit)
+      queryParams.append("limit", searchParams.limit.toString());
+
+    if (searchParams.skills && searchParams.skills.length > 0) {
+      searchParams.skills.forEach((skill) => {
+        queryParams.append("skills", skill);
+      });
+    }
+
+    const url = `http://localhost:5000/api/search/freelancers?${queryParams.toString()}`;
+    console.log("Search URL:", url);
+
+    const response = await fetchWithErrorHandling(url);
+    return response;
+  } catch (error) {
+    console.error("Search freelancers API error:", error);
+    throw error;
+  }
+};
+
+// Add other API functions as needed...
+
+export default {
+  // Auth
+  login,
+  register,
+  sendOTP,
+  verifyOTP,
+  forgotPassword,
+  resetPassword,
+  getCurrentUser,
+  logout,
+  isAuthenticated,
+  getCurrentUserFromStorage,
+
+  // Portfolio
+  savePortfolio,
+  getMyPortfolio,
+  publishPortfolio,
+  deletePortfolio,
+
+  // Search
+  searchFreelancers,
+
+  // Core
+  fetchWithErrorHandling,
+};

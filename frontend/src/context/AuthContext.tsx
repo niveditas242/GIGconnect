@@ -1,4 +1,4 @@
-// frontend/src/context/AuthContext.tsx
+// src/context/AuthContext.tsx
 import React, {
   createContext,
   useState,
@@ -6,20 +6,8 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import {
-  login as apiLogin,
-  register as apiRegister,
-  sendOTP as apiSendOTP,
-  verifyOTP as apiVerifyOTP,
-  forgotPassword as apiForgotPassword,
-  resetPassword as apiResetPassword,
-  getCurrentUser,
-  logout as apiLogout,
-  isAuthenticated as apiIsAuthenticated,
-  getCurrentUserFromStorage,
-} from "../services/api";
 
-interface User {
+export interface User {
   id: string;
   email: string;
   name: string;
@@ -34,7 +22,7 @@ interface User {
   experienceLevel?: string;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   login: (
@@ -44,58 +32,32 @@ interface AuthContextType {
   register: (userData: any) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   loading: boolean;
-  sendOTP: (email: string) => Promise<{ success: boolean; message: string }>;
-  verifyOTP: (
-    email: string,
-    otp: string
-  ) => Promise<{ success: boolean; message: string }>;
-  resendOTP: (email: string) => Promise<{ success: boolean; message: string }>;
-  forgotPassword: (
-    email: string
-  ) => Promise<{ success: boolean; message: string }>;
-  resetPassword: (
-    email: string,
-    otp: string,
-    newPassword: string
-  ) => Promise<{ success: boolean; message: string }>;
-  otpSent: boolean;
-  otpVerified: boolean;
-  otpLoading: boolean;
 }
 
-// Create context - ONLY ONCE
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      if (apiIsAuthenticated()) {
+    const initializeAuth = () => {
+      const token = localStorage.getItem("token");
+      const userData = localStorage.getItem("user");
+
+      if (token && userData) {
         try {
-          const result = await getCurrentUser();
-          if (result.success) {
-            setUser(result.data);
-            setIsAuthenticated(true);
-          } else {
-            apiLogout();
-          }
-        } catch (error) {
-          console.error("Error verifying authentication:", error);
-          apiLogout();
-        }
-      } else {
-        const storedUser = getCurrentUserFromStorage();
-        if (storedUser) {
-          setUser(storedUser);
+          setUser(JSON.parse(userData));
           setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
         }
       }
       setLoading(false);
@@ -104,135 +66,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     initializeAuth();
   }, []);
 
-  const sendOTP = async (
-    email: string
-  ): Promise<{ success: boolean; message: string }> => {
-    setOtpLoading(true);
-    try {
-      console.log("🔄 Sending OTP to:", email);
-      const result = await apiSendOTP(email);
-
-      if (result.success) {
-        setOtpSent(true);
-        return {
-          success: true,
-          message: result.message || "OTP sent successfully",
-        };
-      } else {
-        // FIX: Throw error instead of returning success: false
-        throw new Error(result.message || "Failed to send OTP");
-      }
-    } catch (error: any) {
-      console.error("OTP send error:", error);
-      // FIX: Re-throw the error so it can be caught in Register.tsx
-      throw error;
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const verifyOTP = async (
-    email: string,
-    otp: string
-  ): Promise<{ success: boolean; message: string }> => {
-    setOtpLoading(true);
-    try {
-      console.log("🔄 Verifying OTP for:", email);
-      const result = await apiVerifyOTP(email, otp);
-
-      if (result.success) {
-        setOtpVerified(true);
-        return {
-          success: true,
-          message: result.message || "OTP verified successfully",
-        };
-      } else {
-        throw new Error(result.message || "Invalid OTP");
-      }
-    } catch (error: any) {
-      console.error("OTP verify error:", error);
-      throw error;
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const resendOTP = async (
-    email: string
-  ): Promise<{ success: boolean; message: string }> => {
-    return sendOTP(email);
-  };
-
-  const forgotPassword = async (
-    email: string
-  ): Promise<{ success: boolean; message: string }> => {
-    setOtpLoading(true);
-    try {
-      const result = await apiForgotPassword(email);
-
-      if (result.success) {
-        return {
-          success: true,
-          message: result.message || "Password reset email sent successfully",
-        };
-      } else {
-        throw new Error(result.message || "Failed to send reset email");
-      }
-    } catch (error: any) {
-      console.error("Forgot password error:", error);
-      throw error;
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
-  const resetPassword = async (
-    email: string,
-    otp: string,
-    newPassword: string
-  ): Promise<{ success: boolean; message: string }> => {
-    setOtpLoading(true);
-    try {
-      const result = await apiResetPassword(email, otp, newPassword);
-
-      if (result.success) {
-        return {
-          success: true,
-          message: result.message || "Password reset successfully",
-        };
-      } else {
-        throw new Error(result.message || "Failed to reset password");
-      }
-    } catch (error: any) {
-      console.error("Reset password error:", error);
-      throw error;
-    } finally {
-      setOtpLoading(false);
-    }
-  };
-
   const login = async (
     email: string,
     password: string
   ): Promise<{ success: boolean; message: string }> => {
     setLoading(true);
     try {
-      console.log("🔄 Attempting login for:", email);
-      const result = await apiLogin(email, password);
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (result.success) {
-        setUser(result.user);
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
         setIsAuthenticated(true);
-        return {
-          success: true,
-          message: result.message || "Login successful",
-        };
+        return { success: true, message: data.message || "Login successful" };
       } else {
-        throw new Error(result.message || "Login failed");
+        return { success: false, message: data.message || "Login failed" };
       }
     } catch (error: any) {
       console.error("Login error:", error);
-      throw error;
+      return { success: false, message: error.message || "Login failed" };
     } finally {
       setLoading(false);
     }
@@ -243,44 +104,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   ): Promise<{ success: boolean; message: string }> => {
     setLoading(true);
     try {
-      console.log("🔄 Registering user:", userData.email);
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
 
-      const registerData = {
-        name: userData.fullName || userData.name,
-        email: userData.email,
-        password: userData.password,
-        userType: userData.userType || "client",
-        title: userData.title || "",
-        skills: userData.skills || [],
-        bio: userData.bio || "",
-      };
+      const data = await response.json();
 
-      const result = await apiRegister(registerData);
-
-      if (result.success) {
-        setUser(result.user);
+      if (data.success) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
         setIsAuthenticated(true);
         return {
           success: true,
-          message: result.message || "Registration successful",
+          message: data.message || "Registration successful",
         };
       } else {
-        throw new Error(result.message || "Registration failed");
+        return {
+          success: false,
+          message: data.message || "Registration failed",
+        };
       }
     } catch (error: any) {
       console.error("Registration error:", error);
-      throw error;
+      return {
+        success: false,
+        message: error.message || "Registration failed",
+      };
     } finally {
       setLoading(false);
     }
   };
 
   const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
-    setOtpSent(false);
-    setOtpVerified(false);
-    apiLogout();
   };
 
   const value: AuthContextType = {
@@ -290,20 +154,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     register,
     logout,
     loading,
-    sendOTP,
-    verifyOTP,
-    resendOTP,
-    forgotPassword,
-    resetPassword,
-    otpSent,
-    otpVerified,
-    otpLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
@@ -311,5 +167,4 @@ export const useAuth = () => {
   return context;
 };
 
-// Export AuthContext as named export
-export { AuthContext };
+export default AuthContext;

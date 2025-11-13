@@ -1,6 +1,7 @@
 // src/components/PortfolioBuilder.tsx
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   savePortfolio,
@@ -19,10 +20,12 @@ interface Project {
   category: string;
   liveUrl?: string;
   githubUrl?: string;
+  isPublic?: boolean;
 }
 
 interface PortfolioData {
   _id?: string;
+  freelancerId?: string;
   name: string;
   title: string;
   bio: string;
@@ -41,10 +44,14 @@ interface PortfolioData {
     website?: string;
   };
   isPublished?: boolean;
+  isPublic?: boolean;
+  lastSavedAt?: Date;
+  lastPublishedAt?: Date;
 }
 
 const PortfolioBuilder: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState<PortfolioData>({
     name: user?.name || "",
     title: user?.title || "",
@@ -58,6 +65,8 @@ const PortfolioBuilder: React.FC = () => {
     projects: [],
     profilePhoto: "",
     socialLinks: {},
+    isPublished: false,
+    isPublic: false,
   });
 
   const [currentSkill, setCurrentSkill] = useState("");
@@ -67,6 +76,7 @@ const PortfolioBuilder: React.FC = () => {
     image: "",
     technologies: [],
     category: "web-development",
+    isPublic: true,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
@@ -74,10 +84,28 @@ const PortfolioBuilder: React.FC = () => {
   const [hasExistingPortfolio, setHasExistingPortfolio] = useState(false);
   const [isEditingProject, setIsEditingProject] = useState<string | null>(null);
 
-  // Load portfolio data when component mounts
+  // Check authentication and load portfolio data when component mounts
   useEffect(() => {
-    loadPortfolioData();
-  }, []);
+    const checkAuthentication = () => {
+      const token = localStorage.getItem("token");
+      const userData = localStorage.getItem("user");
+
+      console.log("🔐 Authentication check:");
+      console.log("Token exists:", !!token);
+      console.log("User data exists:", !!userData);
+
+      if (!token || !userData) {
+        toast.error("Please log in to access the portfolio builder");
+        navigate("/login");
+        return;
+      }
+
+      // Load portfolio data if authenticated
+      loadPortfolioData();
+    };
+
+    checkAuthentication();
+  }, [navigate]);
 
   // Load existing portfolio data
   const loadPortfolioData = async () => {
@@ -160,8 +188,16 @@ const PortfolioBuilder: React.FC = () => {
     toast.info("Profile photo removed");
   };
 
-  // SAVE PORTFOLIO - Create or Update
+  // SAVE PORTFOLIO - WITH AUTH CHECK
   const handleSavePortfolio = async () => {
+    // Check authentication first
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please log in to save your portfolio");
+      navigate("/login");
+      return;
+    }
+
     if (!hasContent()) {
       toast.error(
         "Please add name, title, and at least one project before saving."
@@ -171,7 +207,49 @@ const PortfolioBuilder: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await savePortfolio(portfolio);
+      // Create portfolio data that matches EXACTLY what your backend expects
+      const portfolioData = {
+        // Required fields from your model
+        name: portfolio.name.trim(),
+        title: portfolio.title.trim(),
+        email: portfolio.email.trim(),
+
+        // Optional fields with defaults
+        bio: portfolio.bio || "",
+        phone: portfolio.phone || "",
+        location: portfolio.location || "",
+        experience: portfolio.experience || "",
+        education: portfolio.education || "",
+        skills: portfolio.skills || [],
+        profilePhoto: portfolio.profilePhoto || "",
+
+        // Projects with proper structure
+        projects: portfolio.projects.map((project) => ({
+          title: project.title,
+          description: project.description,
+          image: project.image || "",
+          technologies: project.technologies || [],
+          category: project.category || "web-development",
+          liveUrl: project.liveUrl || "",
+          githubUrl: project.githubUrl || "",
+          isPublic: project.isPublic !== false,
+        })),
+
+        // Social links with proper structure
+        socialLinks: {
+          github: portfolio.socialLinks?.github || "",
+          linkedin: portfolio.socialLinks?.linkedin || "",
+          twitter: portfolio.socialLinks?.twitter || "",
+          website: portfolio.socialLinks?.website || "",
+        },
+
+        // Publication status
+        isPublished: portfolio.isPublished || false,
+        isPublic: portfolio.isPublic || false,
+      };
+
+      console.log("📤 Sending portfolio data with token...");
+      const response = await savePortfolio(portfolioData);
 
       if (response.success) {
         setHasExistingPortfolio(true);
@@ -185,16 +263,32 @@ const PortfolioBuilder: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Save portfolio error:", error);
-      toast.error(
-        error.message || "Failed to save portfolio. Please try again."
-      );
+
+      if (
+        error.message.includes("No token") ||
+        error.message.includes("401") ||
+        error.message.includes("authorization denied")
+      ) {
+        toast.error("Session expired. Please log in again.");
+        navigate("/login");
+      } else {
+        toast.error("Failed to save portfolio: " + error.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // PUBLISH PORTFOLIO
+  // PUBLISH PORTFOLIO - WITH AUTH CHECK
   const handlePublishPortfolio = async () => {
+    // Check authentication first
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please log in to publish your portfolio");
+      navigate("/login");
+      return;
+    }
+
     if (!hasContent()) {
       toast.error(
         "Please complete your portfolio (name, title, and at least one project) before publishing."
@@ -202,18 +296,55 @@ const PortfolioBuilder: React.FC = () => {
       return;
     }
 
-    // First save the portfolio, then publish
     setIsLoading(true);
     try {
-      // Save first to ensure all data is current
-      await savePortfolio(portfolio);
+      // First save the portfolio
+      const portfolioData = {
+        name: portfolio.name.trim(),
+        title: portfolio.title.trim(),
+        email: portfolio.email.trim(),
+        bio: portfolio.bio || "",
+        phone: portfolio.phone || "",
+        location: portfolio.location || "",
+        experience: portfolio.experience || "",
+        education: portfolio.education || "",
+        skills: portfolio.skills || [],
+        profilePhoto: portfolio.profilePhoto || "",
+        projects: portfolio.projects.map((project) => ({
+          title: project.title,
+          description: project.description,
+          image: project.image || "",
+          technologies: project.technologies || [],
+          category: project.category || "web-development",
+          liveUrl: project.liveUrl || "",
+          githubUrl: project.githubUrl || "",
+          isPublic: project.isPublic !== false,
+        })),
+        socialLinks: {
+          github: portfolio.socialLinks?.github || "",
+          linkedin: portfolio.socialLinks?.linkedin || "",
+          twitter: portfolio.socialLinks?.twitter || "",
+          website: portfolio.socialLinks?.website || "",
+        },
+        isPublished: true, // Set to true for publishing
+        isPublic: true, // Make it public
+      };
 
-      // Then publish
+      console.log("📤 Saving portfolio before publishing...");
+      await savePortfolio(portfolioData);
+
+      // Then call the publish endpoint
+      console.log("🚀 Publishing portfolio...");
       const response = await publishPortfolio();
 
       if (response.success) {
         setIsPublished(true);
         setHasExistingPortfolio(true);
+        setPortfolio((prev) => ({
+          ...prev,
+          isPublished: true,
+          isPublic: true,
+        }));
         toast.success(
           "🎉 Portfolio published successfully! You are now visible to clients."
         );
@@ -222,16 +353,32 @@ const PortfolioBuilder: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Publish portfolio error:", error);
-      toast.error(
-        error.message || "Failed to publish portfolio. Please try again."
-      );
+
+      if (
+        error.message.includes("No token") ||
+        error.message.includes("401") ||
+        error.message.includes("authorization denied")
+      ) {
+        toast.error("Session expired. Please log in again.");
+        navigate("/login");
+      } else {
+        toast.error("Failed to publish portfolio: " + error.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // DELETE PORTFOLIO
+  // DELETE PORTFOLIO - WITH AUTH CHECK
   const handleDeletePortfolio = async () => {
+    // Check authentication first
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please log in to delete your portfolio");
+      navigate("/login");
+      return;
+    }
+
     if (!hasExistingPortfolio) {
       toast.info("No portfolio to delete");
       return;
@@ -264,6 +411,8 @@ const PortfolioBuilder: React.FC = () => {
           projects: [],
           profilePhoto: "",
           socialLinks: {},
+          isPublished: false,
+          isPublic: false,
         });
         setIsPublished(false);
         setHasExistingPortfolio(false);
@@ -273,6 +422,7 @@ const PortfolioBuilder: React.FC = () => {
           image: "",
           technologies: [],
           category: "web-development",
+          isPublic: true,
         });
         toast.success("🗑️ Portfolio deleted successfully!");
       } else {
@@ -280,9 +430,19 @@ const PortfolioBuilder: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Delete portfolio error:", error);
-      toast.error(
-        error.message || "Failed to delete portfolio. Please try again."
-      );
+
+      if (
+        error.message.includes("No token") ||
+        error.message.includes("401") ||
+        error.message.includes("authorization denied")
+      ) {
+        toast.error("Session expired. Please log in again.");
+        navigate("/login");
+      } else {
+        toast.error(
+          error.message || "Failed to delete portfolio. Please try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -376,6 +536,7 @@ const PortfolioBuilder: React.FC = () => {
         category: currentProject.category || "web-development",
         liveUrl: currentProject.liveUrl,
         githubUrl: currentProject.githubUrl,
+        isPublic: currentProject.isPublic !== false,
       };
 
       if (isEditingProject) {
@@ -403,6 +564,7 @@ const PortfolioBuilder: React.FC = () => {
         image: "",
         technologies: [],
         category: "web-development",
+        isPublic: true,
       });
       setIsEditingProject(null);
     } else {
@@ -434,6 +596,7 @@ const PortfolioBuilder: React.FC = () => {
         image: "",
         technologies: [],
         category: "web-development",
+        isPublic: true,
       });
       setIsEditingProject(null);
     }
@@ -462,6 +625,8 @@ const PortfolioBuilder: React.FC = () => {
       projects: [],
       profilePhoto: "",
       socialLinks: {},
+      isPublished: false,
+      isPublic: false,
     });
     setCurrentProject({
       title: "",
@@ -469,13 +634,108 @@ const PortfolioBuilder: React.FC = () => {
       image: "",
       technologies: [],
       category: "web-development",
+      isPublic: true,
     });
     setIsEditingProject(null);
     toast.info("🔄 Form reset successfully");
   };
 
+  // DEBUG FUNCTION - Check authentication status
+  const debugAuth = () => {
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+
+    console.log("=== AUTH DEBUG INFO ===");
+    console.log("Token:", token);
+    console.log("User Data:", userData);
+    console.log("User from context:", user);
+    console.log("=== END DEBUG INFO ===");
+
+    if (token && userData) {
+      toast.success("✅ User is authenticated! Token is present.");
+    } else {
+      toast.error("❌ User is NOT authenticated. Please log in.");
+    }
+  };
+
+  // TEST FUNCTION - For debugging
+  const testPortfolioSave = async () => {
+    // Check authentication first
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please log in to test portfolio save");
+      return;
+    }
+
+    try {
+      console.log("Testing portfolio save with minimal data...");
+
+      const testData = {
+        name: "Test User",
+        title: "Test Developer",
+        email: "test@example.com",
+        bio: "Test bio",
+        skills: ["JavaScript", "React"],
+        projects: [
+          {
+            title: "Test Project",
+            description: "Test description",
+            technologies: ["React", "Node.js"],
+            category: "web-development",
+          },
+        ],
+      };
+
+      const response = await savePortfolio(testData);
+      console.log("Test save response:", response);
+
+      if (response.success) {
+        toast.success("✅ Test save successful!");
+      } else {
+        toast.error("❌ Test save failed: " + response.message);
+      }
+    } catch (error: any) {
+      console.error("Test save error:", error);
+      toast.error("❌ Test save error: " + error.message);
+    }
+  };
+
   return (
     <div className="portfolio-builder">
+      {/* Debug buttons - remove after testing */}
+      <div
+        style={{ position: "fixed", top: "10px", right: "10px", zIndex: 1000 }}
+      >
+        <button
+          onClick={debugAuth}
+          style={{
+            background: "#007bff",
+            color: "white",
+            border: "none",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            marginBottom: "10px",
+            marginRight: "10px",
+          }}
+        >
+          🔍 Check Auth
+        </button>
+        <button
+          onClick={testPortfolioSave}
+          style={{
+            background: "#28a745",
+            color: "white",
+            border: "none",
+            padding: "8px 12px",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          🧪 Test Save
+        </button>
+      </div>
+
       <div className="portfolio-hero-banner">
         <div className="hero-overlay">
           <div className="hero-content">
@@ -852,6 +1112,7 @@ const PortfolioBuilder: React.FC = () => {
                           image: "",
                           technologies: [],
                           category: "web-development",
+                          isPublic: true,
                         });
                         setIsEditingProject(null);
                       }}
